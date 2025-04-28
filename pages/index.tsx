@@ -37,17 +37,17 @@ export default function Home({
   return (
     <div className="container">
       <Head>
-        <title>Create Next App</title>
+        <title>BHKIM TEST PAGE</title>
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
       <main>
         <h1 className="title">
-          Welcome to <a href="https://nextjs.org">Next.js with MongoDB!</a>
+          TODO
         </h1>
 
         {isConnected ? (
-          <h2 className="subtitle">You are connected to MongoDB</h2>
+          <h2 className="subtitle">현재 MongoDB에 연결되었습니다.</h2>
         ) : (
           <h2 className="subtitle">
             You are NOT connected to MongoDB. Check the <code>README.md</code>{" "}
@@ -55,38 +55,34 @@ export default function Home({
           </h2>
         )}
 
-        <p className="description">
-          Get started by editing <code>pages/index.js</code>
-        </p>
-
         <div className="grid">
-          <a href="https://nextjs.org/docs" className="card">
-            <h3>Documentation &rarr;</h3>
-            <p>Find in-depth information about Next.js features and API.</p>
+          <a href="/movies" className="card">
+            <h3>보증서(WarrantyInfo) CRUD</h3>
+            <p>데이터 CRUD(생성/조회/수정/삭제) 관련 DB 명세, API 구현, 클라이언트 구현</p>
           </a>
 
-          <a href="https://nextjs.org/learn" className="card">
-            <h3>Learn &rarr;</h3>
-            <p>Learn about Next.js in an interactive course with quizzes!</p>
+          <a href="/top" className="card">
+            <h3>사용자(구매자/판매자/총판)</h3>
+            <p>데이터 CRUD(생성/조회/수정/삭제) DB 명세, API 구현, 클라이언트 구현</p>
           </a>
 
           <a
-            href="https://github.com/vercel/next.js/tree/canary/examples"
+            href="/movies"
             className="card"
           >
-            <h3>Examples &rarr;</h3>
-            <p>Discover and deploy boilerplate example Next.js projects.</p>
+            <h3>지점</h3>
+            <p>데이터 CRUD(생성/조회/수정/삭제) 관련 DB 명세, API 구현, 클라이언트 구현</p>
           </a>
 
           <a
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
+            href="/top"
             target="_blank"
             rel="noopener noreferrer"
             className="card"
           >
-            <h3>Deploy &rarr;</h3>
+            <h3>재고</h3>
             <p>
-              Instantly deploy your Next.js site to a public URL with Vercel.
+              이건 일단 하드코딩
             </p>
           </a>
         </div>
