@@ -1,9 +1,6 @@
 import client from "../../../lib/mongodb";
 import { GetServerSideProps } from 'next';
-import { ObjectId } from 'mongodb';
 import styled from 'styled-components';
-
-
 
 // 계정 정보
 interface AccountInfo {
@@ -12,7 +9,6 @@ interface AccountInfo {
     accountType: 'buyer' | 'seller' | 'admin';
     name: string;
     email: string;
-    password: string;
     phone: string;
     address: string;
     carName: string;
@@ -29,7 +25,6 @@ interface ZizeomInfo {
     ownFilmAmount: number; // 필름 얼마나 가지고 있는지
     consumedFilmAmount: number; // todo: 보증서에 얼마만큼 썼는지의 총합
     accountId: string; // 대표자 이름
-    accountInfos: AccountInfo[];
 }
 
 interface ServiceDetailInfo {
@@ -41,26 +36,33 @@ interface ServiceDetailInfo {
     orderId: string;
 }
 
-// 주문 상세 (보증서)
-interface OrderInfoSummary {
+interface OrderInfo {
     _id: string;
-    serviceTarget: string; // 서비스 품목
-    serviceDate: string; // 서비스 시공 일자
-    servicePrice: string; // 서비스 시공 금액
+    serviceTarget: string;
+    serviceDate: string;
+    servicePrice: string;
     zizeomId: string;
     accountId: string;
     carNumber: string;
     serviceDetailIds: string[];
+    serviceDetails: ServiceDetailInfo[];
+    zizeomInfo: ZizeomInfo;
+    accountInfo: AccountInfo;
 }
 
 interface OrdersProps {
-    orders: OrderInfoSummary[];
+    orders: OrderInfo[];
 }
 
 const Container = styled.div`
-    max-width: 800px;
+    max-width: var(--max-width);
     margin: 0 auto;
     padding: 20px;
+    width: 100%;
+
+    @media (max-width: 768px) {
+        padding: 10px;
+    }
 `;
 
 const Title = styled.h1`
@@ -69,25 +71,44 @@ const Title = styled.h1`
     margin-bottom: 20px;
     border-bottom: 2px solid #eee;
     padding-bottom: 10px;
+
+    @media (max-width: 768px) {
+        font-size: 20px;
+        margin-bottom: 15px;
+    }
 `;
 
 const OrderList = styled.ul`
     list-style: none;
     padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+
+    @media (max-width: 768px) {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
 `;
 
 const OrderItem = styled.li`
-    margin-bottom: 20px;
     padding: 15px;
     background-color: #fff;
-    border-radius: 8px;
+    border-radius: var(--border-radius);
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     transition: all 0.3s ease;
     cursor: pointer;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
 
     &:hover {
         transform: translateY(-5px);
         box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+
+    @media (max-width: 768px) {
+        padding: 12px;
     }
 `;
 
@@ -95,12 +116,21 @@ const OrderTitle = styled.h3`
     font-size: 18px;
     color: #444;
     margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    @media (max-width: 768px) {
+        font-size: 16px;
+        margin-bottom: 8px;
+    }
 `;
 
 const InfoList = styled.ul`
     list-style: none;
     padding: 0;
     margin: 0;
+    flex: 1;
 `;
 
 const InfoItem = styled.li`
@@ -108,19 +138,34 @@ const InfoItem = styled.li`
     border-bottom: 1px solid #eee;
     display: flex;
     justify-content: space-between;
+    align-items: center;
     transition: background-color 0.2s ease;
+    font-size: 14px;
 
     &:last-child {
         border-bottom: none;
+    }
+
+    @media (max-width: 768px) {
+        padding: 6px 0;
+        font-size: 13px;
     }
 `;
 
 const Label = styled.span`
     color: #666;
+    margin-right: 10px;
 `;
 
 const Value = styled.span`
     font-weight: bold;
+    text-align: right;
+    word-break: break-word;
+    max-width: 60%;
+
+    @media (max-width: 768px) {
+        max-width: 50%;
+    }
 `;
 
 const OrderListComponent = ({ orders }: OrdersProps) => {
@@ -148,6 +193,14 @@ const OrderListComponent = ({ orders }: OrdersProps) => {
                                 <Label>차량 번호:</Label>
                                 <Value>{order.carNumber}</Value>
                             </InfoItem>
+                            <InfoItem>
+                                <Label>지점:</Label>
+                                <Value>{order.zizeomInfo?.name}</Value>
+                            </InfoItem>
+                            <InfoItem>
+                                <Label>고객:</Label>
+                                <Value>{order.accountInfo?.name}</Value>
+                            </InfoItem>
                         </InfoList>
                     </OrderItem>
                 ))}
@@ -158,64 +211,42 @@ const OrderListComponent = ({ orders }: OrdersProps) => {
 
 export default OrderListComponent;
 
-export const getServerSideProps: GetServerSideProps = async (context) => {
+export const getServerSideProps: GetServerSideProps = async () => {
     try {
-        const { id, carNumber } = context.query;
         const db = client.db("main");
-
-        // 쿼리 조건 생성
-        const query: any = {};
-
-        // id 파라미터 처리
-        if (id) {
-            try {
-                if (typeof id !== 'string') {
-                    throw new Error('Invalid ID format');
-                }
-                query._id = new ObjectId(id);
-            } catch (error) {
-                console.error('Invalid ObjectId:', error);
-                return {
-                    notFound: true
-                };
-            }
-        }
-
-        // carNumber 파라미터 처리
-        if (carNumber) {
-            if (typeof carNumber !== 'string') {
-                return {
-                    notFound: true
-                };
-            }
-            query.carNumber = carNumber;
-        }
-
-        // 쿼리 조건이 없는 경우 처리
-        if (Object.keys(query).length === 0) {
-            return {
-                notFound: true
-            };
-        }
-
         const orders = await db
             .collection("orders")
-            .find(query)
+            .aggregate([
+                {
+                    $lookup: {
+                        from: "zizeoms",
+                        localField: "zizeomId",
+                        foreignField: "_id",
+                        as: "zizeomInfo"
+                    }
+                },
+                {
+                    $lookup: {
+                        from: "accounts",
+                        localField: "accountId",
+                        foreignField: "_id",
+                        as: "accountInfo"
+                    }
+                },
+                {
+                    $addFields: {
+                        zizeomInfo: { $arrayElemAt: ["$zizeomInfo", 0] },
+                        accountInfo: { $arrayElemAt: ["$accountInfo", 0] }
+                    }
+                }
+            ])
             .toArray();
-
-        if (!orders.length) {
-            return {
-                notFound: true
-            };
-        }
 
         return {
             props: { orders: JSON.parse(JSON.stringify(orders)) },
         };
     } catch (e) {
         console.error(e);
-        return {
-            notFound: true
-        };
+        return { props: { orders: [] } };
     }
 };
