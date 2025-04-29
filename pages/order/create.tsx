@@ -1,6 +1,21 @@
 import { useState } from 'react';
 import styled from 'styled-components';
 import { useRouter } from 'next/router';
+import { GetServerSideProps } from 'next';
+import client from '../../lib/mongodb';
+
+interface ZizeomInfo {
+    _id: string;
+    name: string;
+    address: string;
+}
+
+interface AccountInfo {
+    _id: string;
+    name: string;
+    accountName: string;
+    accountType: string;
+}
 
 interface ServiceDetailInfo {
     _id: string;
@@ -22,6 +37,11 @@ interface OrderInfo {
     carNumber: string;
     serviceDetailIds: string[];
     serviceDetails: ServiceDetailInfo[];
+}
+
+interface CreateOrderProps {
+    zizeoms: ZizeomInfo[];
+    accounts: AccountInfo[];
 }
 
 const Container = styled.div`
@@ -61,6 +81,19 @@ const Input = styled.input`
     border: 1px solid #ddd;
     border-radius: 4px;
     font-size: 16px;
+    
+    &:focus {
+        outline: none;
+        border-color: #007bff;
+    }
+`;
+
+const Select = styled.select`
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 16px;
+    background-color: white;
     
     &:focus {
         outline: none;
@@ -108,7 +141,7 @@ const AddButton = styled(Button)`
     }
 `;
 
-const OrderForm = () => {
+const OrderForm = ({ zizeoms, accounts }: CreateOrderProps) => {
     const router = useRouter();
     const [orderInfo, setOrderInfo] = useState<Partial<OrderInfo>>({
         serviceTarget: '',
@@ -127,12 +160,25 @@ const OrderForm = () => {
         zizeomId: ''
     });
 
-    const handleOrderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // 판매자 계정만 필터링
+    const sellerAccounts = accounts.filter(account => account.accountType === 'seller');
+
+    const handleOrderChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
-        setOrderInfo(prev => ({
-            ...prev,
-            [name]: value
-        }));
+        
+        if (name === 'servicePrice') {
+            const numericValue = value.replace(/[^0-9]/g, '');
+            const formattedValue = numericValue ? Number(numericValue).toLocaleString() : '';
+            setOrderInfo(prev => ({
+                ...prev,
+                [name]: formattedValue
+            }));
+        } else {
+            setOrderInfo(prev => ({
+                ...prev,
+                [name]: value
+            }));
+        }
     };
 
     const handleServiceDetailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -161,12 +207,17 @@ const OrderForm = () => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
+            const orderData = {
+                ...orderInfo,
+                servicePrice: orderInfo.servicePrice?.replace(/,/g, '')
+            };
+
             const response = await fetch('/api/orders', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(orderInfo),
+                body: JSON.stringify(orderData),
             });
 
             if (response.ok) {
@@ -213,29 +264,42 @@ const OrderForm = () => {
                         value={orderInfo.servicePrice}
                         onChange={handleOrderChange}
                         required
+                        placeholder="숫자만 입력하세요"
                     />
                 </FormGroup>
 
                 <FormGroup>
-                    <Label>지점 ID</Label>
-                    <Input
-                        type="text"
+                    <Label>지점</Label>
+                    <Select
                         name="zizeomId"
                         value={orderInfo.zizeomId}
                         onChange={handleOrderChange}
                         required
-                    />
+                    >
+                        <option value="">지점을 선택하세요</option>
+                        {zizeoms.map((zizeom) => (
+                            <option key={zizeom._id} value={zizeom._id}>
+                                {zizeom.name} - {zizeom.address}
+                            </option>
+                        ))}
+                    </Select>
                 </FormGroup>
 
                 <FormGroup>
-                    <Label>계정 ID</Label>
-                    <Input
-                        type="text"
+                    <Label>계정</Label>
+                    <Select
                         name="accountId"
                         value={orderInfo.accountId}
                         onChange={handleOrderChange}
                         required
-                    />
+                    >
+                        <option value="">계정을 선택하세요</option>
+                        {sellerAccounts.map((account) => (
+                            <option key={account._id} value={account._id}>
+                                {account.name} ({account.accountName})
+                            </option>
+                        ))}
+                    </Select>
                 </FormGroup>
 
                 <FormGroup>
@@ -307,3 +371,29 @@ const OrderForm = () => {
 };
 
 export default OrderForm;
+
+export const getServerSideProps: GetServerSideProps = async () => {
+    try {
+        const db = client.db("main");
+        
+        const [zizeoms, accounts] = await Promise.all([
+            db.collection("zizeoms").find({}).toArray(),
+            db.collection("accounts").find({}).toArray()
+        ]);
+
+        return {
+            props: {
+                zizeoms: JSON.parse(JSON.stringify(zizeoms)),
+                accounts: JSON.parse(JSON.stringify(accounts))
+            }
+        };
+    } catch (e) {
+        console.error(e);
+        return {
+            props: {
+                zizeoms: [],
+                accounts: []
+            }
+        };
+    }
+};

@@ -1,8 +1,7 @@
-import client from "../../../lib/mongodb";
 import { GetServerSideProps } from 'next';
+import styled from 'styled-components';
+import client from "../../../lib/mongodb";
 import { ObjectId } from 'mongodb';
-
-
 
 // 계정 정보
 interface AccountInfo {
@@ -55,79 +54,146 @@ interface OrderInfo {
     serviceDetails: ServiceDetailInfo[];
 }
 
-interface OrderItemProps {
-    orderInfo: OrderInfo;
+interface SingleOrderProps {
+    order: OrderInfo;
 }
 
-const OrderItem = ({ orderInfo }: OrderItemProps) => {
+const Container = styled.div`
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+`;
+
+const Title = styled.h1`
+    font-size: 24px;
+    color: #333;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #eee;
+    padding-bottom: 10px;
+`;
+
+const OrderInfo = styled.div`
+    background-color: #fff;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+`;
+
+const InfoItem = styled.div`
+    margin-bottom: 15px;
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid #eee;
+
+    &:last-child {
+        border-bottom: none;
+    }
+`;
+
+const Label = styled.span`
+    color: #666;
+`;
+
+const Value = styled.span`
+    font-weight: bold;
+`;
+
+const ServiceDetailsList = styled.div`
+    margin-top: 20px;
+`;
+
+const ServiceDetailItem = styled.div`
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 10px;
+`;
+
+const ServiceDetailTitle = styled.h3`
+    font-size: 18px;
+    color: #444;
+    margin-bottom: 10px;
+`;
+
+const SingleOrderPage = ({ order }: SingleOrderProps) => {
     return (
-        <div>
-            <h1>보증서(사실은 주문서)</h1>
-            <p>
-                <small>정보들</small>
-            </p>
-            <ul>
-                <li>
-                    <h2>서비스 내용</h2>
-                    <h3>시공 품목</h3>
-                    <p>{orderInfo.serviceTarget}</p>
-                    <h3>시공 일자</h3>
-                    <p>{orderInfo.serviceDate}</p>
-                    <h3>시공 금액</h3>
-                    <p>{orderInfo.servicePrice}</p>
-                </li>
-            </ul>
-        </div>
+        <Container>
+            <Title>주문 상세 정보</Title>
+            <OrderInfo>
+                <InfoItem>
+                    <Label>서비스 품목:</Label>
+                    <Value>{order.serviceTarget}</Value>
+                </InfoItem>
+                <InfoItem>
+                    <Label>시공 일자:</Label>
+                    <Value>{order.serviceDate}</Value>
+                </InfoItem>
+                <InfoItem>
+                    <Label>시공 금액:</Label>
+                    <Value>{order.servicePrice}</Value>
+                </InfoItem>
+                <InfoItem>
+                    <Label>차량 번호:</Label>
+                    <Value>{order.carNumber}</Value>
+                </InfoItem>
+                <InfoItem>
+                    <Label>지점:</Label>
+                    <Value>{order.zizeomInfo?.name}</Value>
+                </InfoItem>
+                <InfoItem>
+                    <Label>고객:</Label>
+                    <Value>{order.accountInfo?.name}</Value>
+                </InfoItem>
+            </OrderInfo>
+
+            <ServiceDetailsList>
+                <Title>서비스 상세 정보</Title>
+                {order.serviceDetails?.map((detail) => (
+                    <ServiceDetailItem key={detail._id}>
+                        <ServiceDetailTitle>{detail.name}</ServiceDetailTitle>
+                        <InfoItem>
+                            <Label>소비된 필름 수량:</Label>
+                            <Value>{detail.consumedFilmAmount}</Value>
+                        </InfoItem>
+                        <InfoItem>
+                            <Label>보증 기간:</Label>
+                            <Value>{detail.dueDate}</Value>
+                        </InfoItem>
+                    </ServiceDetailItem>
+                ))}
+            </ServiceDetailsList>
+        </Container>
     );
 };
 
-export default OrderItem;
+export default SingleOrderPage;
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
+    const { id } = context.query;
+    
     try {
-        const { id, carNumber } = context.query;
-        const db = client.db("main");
-
-        // 쿼리 조건 생성
-        const query: any = {};
-
-        // id 파라미터 처리
-        if (id) {
-            try {
-                if (typeof id !== 'string') {
-                    throw new Error('Invalid ID format');
-                }
-                query._id = new ObjectId(id);
-            } catch (error) {
-                console.error('Invalid ObjectId:', error);
-                return {
-                    notFound: true
-                };
-            }
-        }
-
-        // carNumber 파라미터 처리
-        if (carNumber) {
-            if (typeof carNumber !== 'string') {
-                return {
-                    notFound: true
-                };
-            }
-            query.carNumber = carNumber;
-        }
-
-        // 쿼리 조건이 없는 경우 처리
-        if (Object.keys(query).length === 0) {
+        if (!id || typeof id !== 'string') {
             return {
                 notFound: true
             };
         }
 
-        const orders = await db
+        const db = client.db("main");
+        const order = await db
             .collection("orders")
             .aggregate([
                 {
-                    $match: query
+                    $match: { _id: new ObjectId(id) }
+                },
+                {
+                    $lookup: {
+                        from: "zizeoms",
+                        localField: "zizeomId",
+                        foreignField: "_id",
+                        as: "zizeomInfo"
+                    }
                 },
                 {
                     $lookup: {
@@ -139,29 +205,37 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
                 },
                 {
                     $lookup: {
-                        from: "zizeoms",
-                        localField: "zizeomId",
-                        foreignField: "_id",
-                        as: "zizeomInfo"
+                        from: "serviceDetails",
+                        let: { orderId: "$_id" },
+                        pipeline: [
+                            {
+                                $match: {
+                                    $expr: { $eq: ["$orderId", "$$orderId"] }
+                                }
+                            }
+                        ],
+                        as: "serviceDetails"
                     }
                 },
                 {
                     $addFields: {
-                        accountInfo: { $arrayElemAt: ["$accountInfo", 0] },
-                        zizeomInfo: { $arrayElemAt: ["$zizeomInfo", 0] }
+                        zizeomInfo: { $arrayElemAt: ["$zizeomInfo", 0] },
+                        accountInfo: { $arrayElemAt: ["$accountInfo", 0] }
                     }
                 }
             ])
             .toArray();
 
-        if (!orders.length) {
+        if (!order[0]) {
             return {
                 notFound: true
             };
         }
 
         return {
-            props: { orderInfo: JSON.parse(JSON.stringify(orders))[0] },
+            props: {
+                order: JSON.parse(JSON.stringify(order[0]))
+            }
         };
     } catch (e) {
         console.error(e);

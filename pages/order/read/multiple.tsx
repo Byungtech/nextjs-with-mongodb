@@ -1,6 +1,8 @@
 import client from "../../../lib/mongodb";
 import { GetServerSideProps } from 'next';
 import styled from 'styled-components';
+import { useRouter } from 'next/router';
+import { ObjectId } from 'mongodb';
 
 // 계정 정보
 interface AccountInfo {
@@ -75,6 +77,33 @@ const Title = styled.h1`
     @media (max-width: 768px) {
         font-size: 20px;
         margin-bottom: 15px;
+    }
+`;
+
+const HeaderContainer = styled.div`
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+`;
+
+const CreateButton = styled.button`
+    background-color: #4CAF50;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s ease;
+
+    &:hover {
+        background-color: #45a049;
+    }
+
+    @media (max-width: 768px) {
+        padding: 8px 16px;
+        font-size: 14px;
     }
 `;
 
@@ -169,12 +198,30 @@ const Value = styled.span`
 `;
 
 const OrderListComponent = ({ orders }: OrdersProps) => {
+    const router = useRouter();
+
+    const handleOrderClick = (orderId: string) => {
+        router.push(`/order/read/single?id=${orderId}`);
+    };
+
+    const handleCreateClick = () => {
+        router.push('/order/create');
+    };
+
     return (
         <Container>
-            <Title>주문 목록</Title>
+            <HeaderContainer>
+                <Title>주문 목록</Title>
+                <CreateButton onClick={handleCreateClick}>
+                    주문(보증서) 생성
+                </CreateButton>
+            </HeaderContainer>
             <OrderList>
                 {orders.map((order) => (
-                    <OrderItem key={order._id}>
+                    <OrderItem 
+                        key={order._id} 
+                        onClick={() => handleOrderClick(order._id)}
+                    >
                         <OrderTitle>주문 정보</OrderTitle>
                         <InfoList>
                             <InfoItem>
@@ -243,7 +290,9 @@ export const getServerSideProps: GetServerSideProps = async () => {
             .toArray();
 
         return {
-            props: { orders: JSON.parse(JSON.stringify(orders)) },
+            props: { 
+                orders: JSON.parse(JSON.stringify(orders))
+            },
         };
     } catch (e) {
         console.error(e);
