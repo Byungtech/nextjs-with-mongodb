@@ -1,14 +1,93 @@
 import Head from "next/head";
 import client from "../lib/mongodb";
 import type { InferGetServerSidePropsType, GetServerSideProps } from "next";
+import styled from 'styled-components';
 
 type ConnectionStatus = {
   isConnected: boolean;
 };
 
-export const getServerSideProps: GetServerSideProps<
-  ConnectionStatus
-> = async () => {
+const Container = styled.div`
+  min-height: 100vh;
+  padding: 0 0.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+`;
+
+const Main = styled.main`
+  padding: 5rem 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+`;
+
+const Title = styled.h1`
+  margin: 0;
+  line-height: 1.15;
+  font-size: 4rem;
+  text-align: center;
+  color: #0070f3;
+`;
+
+const Subtitle = styled.h2`
+  font-size: 2rem;
+  text-align: center;
+  margin: 1rem 0;
+`;
+
+const Grid = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  max-width: 800px;
+  margin-top: 3rem;
+`;
+
+const Card = styled.a`
+  margin: 1rem;
+  flex-basis: 45%;
+  padding: 1.5rem;
+  text-align: left;
+  color: inherit;
+  text-decoration: none;
+  border: 1px solid #eaeaea;
+  border-radius: 10px;
+  transition: all 0.3s ease;
+
+  &:hover {
+    color: #0070f3;
+    border-color: #0070f3;
+    transform: translateY(-5px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  }
+`;
+
+const CardTitle = styled.h3`
+  margin: 0 0 1rem 0;
+  font-size: 1.5rem;
+`;
+
+const CardDescription = styled.p`
+  margin: 0;
+  font-size: 1.25rem;
+  line-height: 1.5;
+`;
+
+const Footer = styled.footer`
+  width: 100%;
+  height: 100px;
+  border-top: 1px solid #eaeaea;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+`;
+
+export const getServerSideProps: GetServerSideProps<ConnectionStatus> = async () => {
   try {
     await client.connect();
     // `await client.connect()` will use the default database passed in the MONGODB_URI
@@ -35,69 +114,64 @@ export default function Home({
   isConnected,
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
   return (
-    <div className="container">
+    <Container>
       <Head>
-        <title>BHKIM TEST PAGE</title>
+        <title>필름 시공 관리 시스템</title>
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      <main>
-        <h1 className="title">
-          TODO
-        </h1>
+      <Main>
+        <Title>필름 시공 관리 시스템</Title>
 
         {isConnected ? (
-          <h2 className="subtitle">현재 MongoDB에 연결되었습니다.</h2>
+          <Subtitle>현재 MongoDB에 연결되었습니다.</Subtitle>
         ) : (
-          <h2 className="subtitle">
-            You are NOT connected to MongoDB. Check the <code>README.md</code>{" "}
-            for instructions.
-          </h2>
+          <Subtitle>
+            MongoDB 연결에 실패했습니다. <code>README.md</code>를 확인해주세요.
+          </Subtitle>
         )}
 
-        <div className="grid">
-          <a href="/movies" className="card">
-            <h3>보증서(WarrantyInfo) CRUD</h3>
-            <p>데이터 CRUD(생성/조회/수정/삭제) 관련 DB 명세, API 구현, 클라이언트 구현</p>
-          </a>
+        <Grid>
+          <Card href="/order/read/multiple">
+            <CardTitle>주문 관리</CardTitle>
+            <CardDescription>
+              주문 목록 조회, 상세 정보 확인, 새로운 주문 생성
+            </CardDescription>
+          </Card>
 
-          <a href="/top" className="card">
-            <h3>사용자(구매자/판매자/총판)</h3>
-            <p>데이터 CRUD(생성/조회/수정/삭제) DB 명세, API 구현, 클라이언트 구현</p>
-          </a>
+          <Card href="/zizeom/read/multiple">
+            <CardTitle>지점 관리</CardTitle>
+            <CardDescription>
+              지점 목록 조회, 상세 정보 확인, 새로운 지점 생성
+            </CardDescription>
+          </Card>
 
-          <a
-            href="/movies"
-            className="card"
-          >
-            <h3>지점</h3>
-            <p>데이터 CRUD(생성/조회/수정/삭제) 관련 DB 명세, API 구현, 클라이언트 구현</p>
-          </a>
+          <Card href="/account/read/multiple">
+            <CardTitle>계정 관리</CardTitle>
+            <CardDescription>
+              계정 목록 조회, 상세 정보 확인, 새로운 계정 생성
+            </CardDescription>
+          </Card>
 
-          <a
-            href="/top"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="card"
-          >
-            <h3>재고</h3>
-            <p>
-              이건 일단 하드코딩
-            </p>
-          </a>
-        </div>
-      </main>
+          <Card href="/inventory">
+            <CardTitle>재고 관리</CardTitle>
+            <CardDescription>
+              필름 재고 현황 조회 및 관리
+            </CardDescription>
+          </Card>
+        </Grid>
+      </Main>
 
-      <footer>
+      <Footer>
         <a
           href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
           target="_blank"
           rel="noopener noreferrer"
         >
           Powered by{" "}
-          <img src="/vercel.svg" alt="Vercel Logo" className="logo" />
+          <img src="/vercel.svg" alt="Vercel Logo" style={{ height: '1em', marginLeft: '0.5rem' }} />
         </a>
-      </footer>
+      </Footer>
 
       <style jsx>{`
         .container {
@@ -248,6 +322,6 @@ export default function Home({
           box-sizing: border-box;
         }
       `}</style>
-    </div>
+    </Container>
   );
 }
