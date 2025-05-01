@@ -142,14 +142,14 @@ const OrderList = ({ orders, zizeoms, accounts }: OrderListProps) => {
                         {filteredOrders.map((order) => (
                             <tr
                                 key={order._id}
-                                onClick={() => router.push(`/order/read/single?id=${order._id}`)}
+                                onClick={() => router.push(`/order/${order._id}`)}
                                 className="hover:bg-gray-50 cursor-pointer"
                             >
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                     {order.serviceTarget}
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    {order.serviceDate}
+                                    {new Date(order.serviceDate).toLocaleDateString('ko-KR')}
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                     {Number(order.servicePrice).toLocaleString()}원

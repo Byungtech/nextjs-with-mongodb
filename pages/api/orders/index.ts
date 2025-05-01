@@ -6,8 +6,6 @@ interface ServiceDetailInfo {
     name: string;
     consumedFilmAmount: number;
     dueDate: string;
-    zizeomId: string;
-    orderId?: string;
 }
 
 interface OrderInfo {
@@ -17,8 +15,7 @@ interface OrderInfo {
     zizeomId: string;
     accountId: string;
     carNumber: string;
-    serviceDetailIds?: string[];
-    serviceDetails?: ServiceDetailInfo[];
+    serviceDetails: ServiceDetailInfo[];
 }
 
 export default async function handler(
@@ -34,12 +31,15 @@ export default async function handler(
         const orderData: OrderInfo = req.body;
 
         // 필수 필드 검증
-        const requiredFields = ['serviceTarget', 'serviceDate', 'servicePrice', 'zizeomId', 'accountId', 'carNumber'];
+        const requiredFields = ['serviceTarget', 'serviceDate', 'servicePrice', 'zizeomId', 'accountId', 'carNumber', 'serviceDetails'];
         for (const field of requiredFields) {
             if (!orderData[field as keyof OrderInfo]) {
                 return res.status(400).json({ message: `${field} is required` });
             }
         }
+
+        // 시공 상세 정보의 수량 합산 계산
+        const totalQuantity = orderData.serviceDetails.reduce((sum, detail) => sum + detail.consumedFilmAmount, 0);
 
         // 서비스 상세 정보 처리
         let serviceDetailIds: string[] = [];
@@ -80,6 +80,12 @@ export default async function handler(
                 { $set: { orderId: orderResult.insertedId.toString() } }
             );
         }
+
+        // 해당 지점의 consumedField 증가
+        await db.collection('zizeoms').updateOne(
+            { _id: new ObjectId(orderData.zizeomId) },
+            { $inc: { consumedField: totalQuantity } }
+        );
 
         res.status(201).json({
             message: 'Order created successfully',

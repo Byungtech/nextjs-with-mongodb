@@ -4,9 +4,10 @@ import client from '../../lib/mongodb';
 import { ObjectId } from 'mongodb';
 
 interface ServiceDetail {
-    serviceType: string;
-    quantity: number;
-    price: number;
+    _id: string;
+    name: string;
+    consumedFilmAmount: number;
+    dueDate: string;
 }
 
 interface OrderInfo {
@@ -32,9 +33,25 @@ interface OrderInfo {
 
 interface OrderDetailProps {
     order: OrderInfo;
+    zizeom: {
+        name: string;
+        address: string;
+        phone: string;
+    } | null;
+    account: {
+        name: string;
+        accountName: string;
+        phone: string;
+        email: string;
+    } | null;
+    serviceDetails: {
+        name: string;
+        consumedFilmAmount: number;
+        dueDate: string;
+    }[];
 }
 
-const OrderDetail = ({ order }: OrderDetailProps) => {
+const OrderDetail = ({ order, zizeom, account, serviceDetails }: OrderDetailProps) => {
     const router = useRouter();
 
     return (
@@ -84,48 +101,48 @@ const OrderDetail = ({ order }: OrderDetailProps) => {
                                 <div className="space-y-4">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-600">지점명</label>
-                                        <p className="mt-1 text-gray-900">{order.zizeom.name}</p>
+                                        <p className="mt-1 text-gray-900">{zizeom?.name}</p>
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-600">주소</label>
-                                        <p className="mt-1 text-gray-900">{order.zizeom.address}</p>
+                                        <p className="mt-1 text-gray-900">{zizeom?.address}</p>
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-600">연락처</label>
-                                        <p className="mt-1 text-gray-900">{order.zizeom.phone}</p>
+                                        <p className="mt-1 text-gray-900">{zizeom?.phone}</p>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
                         <div className="mt-8 border-t border-gray-200 pt-6">
-                            <h2 className="text-lg font-medium text-gray-800 mb-4">서비스 상세</h2>
+                            <h2 className="text-lg font-medium text-gray-800 mb-4">시공 상세 정보</h2>
                             <div className="overflow-x-auto">
                                 <table className="min-w-full divide-y divide-gray-200">
                                     <thead className="bg-gray-50">
                                         <tr>
                                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                서비스 유형
+                                                시공 유형
                                             </th>
                                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                수량
+                                                소모 필름량
                                             </th>
                                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                가격
+                                                보증 만료 기간
                                             </th>
                                         </tr>
                                     </thead>
                                     <tbody className="bg-white divide-y divide-gray-200">
-                                        {order.serviceDetails && order.serviceDetails.map((detail, index) => (
+                                        {serviceDetails.map((detail, index) => (
                                             <tr key={index}>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                    {detail.serviceType}
+                                                    {detail.name}
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                    {detail.quantity}
+                                                    {detail.consumedFilmAmount}
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                    {detail.price.toLocaleString('ko-KR')}원
+                                                    {new Date(detail.dueDate).toLocaleDateString('ko-KR')}
                                                 </td>
                                             </tr>
                                         ))}
@@ -141,11 +158,11 @@ const OrderDetail = ({ order }: OrderDetailProps) => {
                                     <div className="space-y-4">
                                         <div>
                                             <label className="block text-sm font-medium text-gray-600">이름</label>
-                                            <p className="mt-1 text-gray-900">{order.account.name}</p>
+                                            <p className="mt-1 text-gray-900">{account?.name}</p>
                                         </div>
                                         <div>
                                             <label className="block text-sm font-medium text-gray-600">계정명</label>
-                                            <p className="mt-1 text-gray-900">{order.account.accountName}</p>
+                                            <p className="mt-1 text-gray-900">{account?.accountName}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -153,11 +170,11 @@ const OrderDetail = ({ order }: OrderDetailProps) => {
                                     <div className="space-y-4">
                                         <div>
                                             <label className="block text-sm font-medium text-gray-600">연락처</label>
-                                            <p className="mt-1 text-gray-900">{order.account.phone}</p>
+                                            <p className="mt-1 text-gray-900">{account?.phone}</p>
                                         </div>
                                         <div>
                                             <label className="block text-sm font-medium text-gray-600">이메일</label>
-                                            <p className="mt-1 text-gray-900">{order.account.email}</p>
+                                            <p className="mt-1 text-gray-900">{account?.email}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -194,6 +211,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
 
         let zizeom = null;
         let account = null;
+        let serviceDetails: ServiceDetail[] = [];
 
         if (order.zizeomId) {
             console.log('Fetching zizeom with ID:', order.zizeomId);
@@ -215,11 +233,27 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
             console.log('Found account:', account);
         }
 
+        if (order.serviceDetailIds && order.serviceDetailIds.length > 0) {
+            console.log('Fetching service details for order ID:', order._id);
+            const serviceDetailsResult = await db.collection("serviceDetails")
+                .find({ orderId: order._id.toString() })
+                .toArray();
+            
+            serviceDetails = serviceDetailsResult.map(detail => ({
+                _id: detail._id.toString(),
+                name: detail.name,
+                consumedFilmAmount: detail.consumedFilmAmount,
+                dueDate: detail.dueDate
+            }));
+            console.log('Found service details:', serviceDetails);
+        }
+
         return {
             props: {
                 order: JSON.parse(JSON.stringify(order)),
                 zizeom: zizeom ? JSON.parse(JSON.stringify(zizeom)) : null,
-                account: account ? JSON.parse(JSON.stringify(account)) : null
+                account: account ? JSON.parse(JSON.stringify(account)) : null,
+                serviceDetails: JSON.parse(JSON.stringify(serviceDetails))
             }
         };
     } catch (error) {

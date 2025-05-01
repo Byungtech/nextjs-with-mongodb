@@ -14,6 +14,7 @@ interface AccountInfo {
     name: string;
     accountName: string;
     accountType: string;
+    phone: string;
 }
 
 interface ServiceDetailInfo {
@@ -34,6 +35,7 @@ interface OrderInfo {
     zizeomId: string;
     accountId: string;
     carNumber: string;
+    price: number;
     serviceDetailIds: string[];
     serviceDetails: ServiceDetailInfo[];
 }
@@ -43,27 +45,43 @@ interface CreateOrderProps {
     accounts: AccountInfo[];
 }
 
+interface FormData {
+    zizeomId: string;
+    accountId: string;
+    orderDate: string;
+    totalAmount: number;
+    status: string;
+    serviceTarget: string;
+    serviceDate: string;
+    servicePrice: string;
+    carNumber: string;
+    serviceDetails: {
+        name: string;
+        consumedFilmAmount: number;
+        dueDate: string;
+    }[];
+}
+
 const OrderForm = ({ zizeoms, accounts }: CreateOrderProps) => {
     const router = useRouter();
-    const [orderInfo, setOrderInfo] = useState<Partial<OrderInfo>>({
+    const [formData, setFormData] = useState<FormData>({
+        zizeomId: '',
+        accountId: '',
+        orderDate: new Date().toISOString().split('T')[0],
+        totalAmount: 0,
+        status: 'pending',
         serviceTarget: '',
         serviceDate: '',
         servicePrice: '',
-        zizeomId: '',
-        accountId: '',
         carNumber: '',
-        serviceDetails: []
+        serviceDetails: [
+            { name: '', consumedFilmAmount: 1, dueDate: '' },
+            { name: '', consumedFilmAmount: 1, dueDate: '' }
+        ]
     });
 
-    const [serviceDetail, setServiceDetail] = useState<Partial<ServiceDetailInfo>>({
-        name: '',
-        consumedFilmAmount: 0,
-        dueDate: '',
-        zizeomId: ''
-    });
-
-    // 판매자 계정만 필터링
-    const sellerAccounts = accounts.filter(account => account.accountType === 'seller');
+    // 구매자 계정만 필터링
+    const buyerAccounts = accounts.filter(account => account.accountType === 'buyer');
 
     const handleOrderChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
@@ -71,47 +89,58 @@ const OrderForm = ({ zizeoms, accounts }: CreateOrderProps) => {
         if (name === 'servicePrice') {
             const numericValue = value.replace(/[^0-9]/g, '');
             const formattedValue = numericValue ? Number(numericValue).toLocaleString() : '';
-            setOrderInfo(prev => ({
+            setFormData(prev => ({
                 ...prev,
                 [name]: formattedValue
             }));
         } else {
-            setOrderInfo(prev => ({
+            setFormData(prev => ({
                 ...prev,
                 [name]: value
             }));
         }
     };
 
-    const handleServiceDetailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, value } = e.target;
-        setServiceDetail(prev => ({
+    const handleServiceDetailChange = (index: number, field: string, value: string | number) => {
+        setFormData(prev => ({
             ...prev,
-            [name]: value
+            serviceDetails: prev.serviceDetails.map((detail, i) =>
+                i === index ? { ...detail, [field]: value } : detail
+            )
+        }));
+    };
+
+    const removeServiceDetail = (index: number) => {
+        setFormData(prev => ({
+            ...prev,
+            serviceDetails: prev.serviceDetails.filter((_, i) => i !== index)
         }));
     };
 
     const addServiceDetail = () => {
-        if (serviceDetail.name && serviceDetail.consumedFilmAmount && serviceDetail.dueDate) {
-            setOrderInfo(prev => ({
-                ...prev,
-                serviceDetails: [...(prev.serviceDetails || []), serviceDetail as ServiceDetailInfo]
-            }));
-            setServiceDetail({
-                name: '',
-                consumedFilmAmount: 0,
-                dueDate: '',
-                zizeomId: ''
-            });
-        }
+        setFormData(prev => ({
+            ...prev,
+            serviceDetails: [...prev.serviceDetails, { name: '', consumedFilmAmount: 1, dueDate: '' }]
+        }));
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        // 시공 상세정보 유효성 검사
+        const hasEmptyDetails = formData.serviceDetails.some(detail => 
+            !detail.name || !detail.consumedFilmAmount || !detail.dueDate
+        );
+
+        if (hasEmptyDetails) {
+            alert('모든 시공 상세정보를 입력해주세요.');
+            return;
+        }
+
         try {
             const orderData = {
-                ...orderInfo,
-                servicePrice: orderInfo.servicePrice?.replace(/,/g, '')
+                ...formData,
+                servicePrice: formData.servicePrice?.replace(/,/g, '')
             };
 
             const response = await fetch('/api/orders', {
@@ -133,10 +162,17 @@ const OrderForm = ({ zizeoms, accounts }: CreateOrderProps) => {
     };
 
     return (
-        <div className="max-w-3xl mx-auto p-6">
-            <h1 className="text-2xl font-semibold text-gray-800 mb-6 pb-4 border-b border-gray-200">
-                새 주문 생성
-            </h1>
+        <div className="max-w-4xl mx-auto p-6">
+            <div className="flex justify-between items-center mb-6">
+                <h1 className="text-2xl font-semibold text-gray-800">주문 생성</h1>
+                <button
+                    onClick={() => router.back()}
+                    className="px-4 py-2 text-gray-600 hover:text-gray-800 focus:outline-none"
+                >
+                    ← 뒤로 가기
+                </button>
+            </div>
+
             <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="space-y-4">
                     <div>
@@ -146,7 +182,7 @@ const OrderForm = ({ zizeoms, accounts }: CreateOrderProps) => {
                         <input
                             type="text"
                             name="serviceTarget"
-                            value={orderInfo.serviceTarget}
+                            value={formData.serviceTarget}
                             onChange={handleOrderChange}
                             required
                             className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
@@ -160,7 +196,7 @@ const OrderForm = ({ zizeoms, accounts }: CreateOrderProps) => {
                         <input
                             type="date"
                             name="serviceDate"
-                            value={orderInfo.serviceDate}
+                            value={formData.serviceDate}
                             onChange={handleOrderChange}
                             required
                             className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
@@ -174,7 +210,7 @@ const OrderForm = ({ zizeoms, accounts }: CreateOrderProps) => {
                         <input
                             type="text"
                             name="servicePrice"
-                            value={orderInfo.servicePrice}
+                            value={formData.servicePrice}
                             onChange={handleOrderChange}
                             required
                             placeholder="숫자만 입력하세요"
@@ -188,7 +224,7 @@ const OrderForm = ({ zizeoms, accounts }: CreateOrderProps) => {
                         </label>
                         <select
                             name="zizeomId"
-                            value={orderInfo.zizeomId}
+                            value={formData.zizeomId}
                             onChange={handleOrderChange}
                             required
                             className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
@@ -204,19 +240,19 @@ const OrderForm = ({ zizeoms, accounts }: CreateOrderProps) => {
 
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                            계정
+                            구매자 이름
                         </label>
                         <select
                             name="accountId"
-                            value={orderInfo.accountId}
+                            value={formData.accountId}
                             onChange={handleOrderChange}
                             required
                             className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                         >
-                            <option value="">계정을 선택하세요</option>
-                            {sellerAccounts.map(account => (
+                            <option value="">구매자를 선택하세요</option>
+                            {buyerAccounts.map(account => (
                                 <option key={account._id} value={account._id}>
-                                    {account.name} ({account.accountName})
+                                    {account.name} ({account.phone})
                                 </option>
                             ))}
                         </select>
@@ -229,7 +265,7 @@ const OrderForm = ({ zizeoms, accounts }: CreateOrderProps) => {
                         <input
                             type="text"
                             name="carNumber"
-                            value={orderInfo.carNumber}
+                            value={formData.carNumber}
                             onChange={handleOrderChange}
                             required
                             className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
@@ -237,79 +273,85 @@ const OrderForm = ({ zizeoms, accounts }: CreateOrderProps) => {
                     </div>
                 </div>
 
-                <div className="border border-gray-200 rounded-lg p-6 mt-8">
+                <div>
                     <h2 className="text-lg font-medium text-gray-800 mb-4">시공 상세 정보</h2>
                     <div className="space-y-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                시공 부위
-                            </label>
-                            <input
-                                type="text"
-                                name="name"
-                                value={serviceDetail.name}
-                                onChange={handleServiceDetailChange}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                소모 필름량
-                            </label>
-                            <input
-                                type="number"
-                                name="consumedFilmAmount"
-                                value={serviceDetail.consumedFilmAmount}
-                                onChange={handleServiceDetailChange}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                보증 기간
-                            </label>
-                            <input
-                                type="date"
-                                name="dueDate"
-                                value={serviceDetail.dueDate}
-                                onChange={handleServiceDetailChange}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                            />
-                        </div>
-
+                        {formData.serviceDetails.map((detail, index) => (
+                            <div key={index} className="relative group">
+                                <div className="grid grid-cols-3 gap-4 p-4 bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-600 mb-1">시공 유형</label>
+                                        <input
+                                            type="text"
+                                            name={`name-${index}`}
+                                            value={detail.name}
+                                            onChange={(e) => handleServiceDetailChange(index, 'name', e.target.value)}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-colors duration-200"
+                                            placeholder="시공 유형을 입력하세요"
+                                            required
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-600 mb-1">소모 필름량</label>
+                                        <input
+                                            type="number"
+                                            name={`consumedFilmAmount-${index}`}
+                                            value={detail.consumedFilmAmount}
+                                            onChange={(e) => handleServiceDetailChange(index, 'consumedFilmAmount', parseInt(e.target.value))}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-colors duration-200"
+                                            min="1"
+                                            required
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-600 mb-1">보증 만료 기간</label>
+                                        <input
+                                            type="date"
+                                            name={`dueDate-${index}`}
+                                            value={detail.dueDate}
+                                            onChange={(e) => handleServiceDetailChange(index, 'dueDate', e.target.value)}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-colors duration-200"
+                                            required
+                                        />
+                                    </div>
+                                    {formData.serviceDetails.length > 1 && (
+                                        <button
+                                            type="button"
+                                            onClick={() => removeServiceDetail(index)}
+                                            className="absolute -right-2 -top-2 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors duration-200"
+                                            title="삭제"
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                                            </svg>
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                    <div className="mt-4">
                         <button
                             type="button"
                             onClick={addServiceDetail}
-                            className="w-full px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+                            className="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-colors duration-200"
                         >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+                            </svg>
                             시공 상세 정보 추가
                         </button>
                     </div>
-
-                    {orderInfo.serviceDetails && orderInfo.serviceDetails.length > 0 && (
-                        <div className="mt-6 space-y-4">
-                            {orderInfo.serviceDetails.map((detail, index) => (
-                                <div
-                                    key={index}
-                                    className="p-4 border border-gray-200 rounded-md bg-gray-50"
-                                >
-                                    <p className="font-medium">시공 부위: {detail.name}</p>
-                                    <p>소모 필름량: {detail.consumedFilmAmount}</p>
-                                    <p>보증 기간: {detail.dueDate}</p>
-                                </div>
-                            ))}
-                        </div>
-                    )}
                 </div>
 
-                <button
-                    type="submit"
-                    className="w-full px-4 py-2 bg-primary text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-                >
-                    주문 생성
-                </button>
+                <div className="flex justify-end">
+                    <button
+                        type="submit"
+                        className="px-4 py-2 bg-primary text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                    >
+                        주문 생성
+                    </button>
+                </div>
             </form>
         </div>
     );
