@@ -1,173 +1,131 @@
-import client from "../../../lib/mongodb";
+import { useState } from 'react';
+import { useRouter } from 'next/router';
 import { GetServerSideProps } from 'next';
-import styled from 'styled-components';
+import client from '../../../lib/mongodb';
 
 interface AccountInfo {
     _id: string;
-    accountName: string;
-    accountType: 'buyer' | 'seller' | 'admin';
     name: string;
+    accountName: string;
+    accountType: string;
     email: string;
     phone: string;
     address: string;
-    carName: string;
-    carNumber: string;
-    carDaeNumber: string;
 }
 
-interface AccountsProps {
+interface AccountListProps {
     accounts: AccountInfo[];
 }
 
-const Container = styled.div`
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 20px;
-`;
+const AccountList = ({ accounts }: AccountListProps) => {
+    const router = useRouter();
+    const [searchTerm, setSearchTerm] = useState('');
 
-const Title = styled.h1`
-    font-size: 24px;
-    color: #333;
-    margin-bottom: 20px;
-    border-bottom: 2px solid #eee;
-    padding-bottom: 10px;
-`;
+    const filteredAccounts = accounts.filter(account =>
+        account.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        account.accountName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        account.email.toLowerCase().includes(searchTerm.toLowerCase())
+    );
 
-const AccountList = styled.ul`
-    list-style: none;
-    padding: 0;
-`;
-
-const AccountItem = styled.li`
-    margin-bottom: 20px;
-    padding: 15px;
-    background-color: #fff;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    transition: all 0.3s ease;
-    cursor: pointer;
-
-    &:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-    }
-`;
-
-const AccountTitle = styled.h3`
-    font-size: 18px;
-    color: #444;
-    margin-bottom: 10px;
-`;
-
-const InfoList = styled.ul`
-    list-style: none;
-    padding: 0;
-    margin: 0;
-`;
-
-const InfoItem = styled.li`
-    padding: 8px 0;
-    border-bottom: 1px solid #eee;
-    display: flex;
-    justify-content: space-between;
-    transition: background-color 0.2s ease;
-
-    &:last-child {
-        border-bottom: none;
-    }
-`;
-
-const Label = styled.span`
-    color: #666;
-`;
-
-const Value = styled.span`
-    font-weight: bold;
-`;
-
-const AccountTypeBadge = styled.span<{ type: 'buyer' | 'seller' | 'admin' }>`
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 12px;
-    font-weight: bold;
-    background-color: ${props => {
-        switch (props.type) {
-            case 'buyer': return '#e3f2fd';
-            case 'seller': return '#e8f5e9';
-            case 'admin': return '#fce4ec';
-            default: return '#f5f5f5';
-        }
-    }};
-    color: ${props => {
-        switch (props.type) {
-            case 'buyer': return '#1976d2';
-            case 'seller': return '#2e7d32';
-            case 'admin': return '#c2185b';
-            default: return '#757575';
-        }
-    }};
-`;
-
-const AccountListComponent = ({ accounts }: AccountsProps) => {
     return (
-        <Container>
-            <Title>계정 목록</Title>
-            <AccountList>
-                {accounts.map((account) => (
-                    <AccountItem key={account._id}>
-                        <AccountTitle>
-                            {account.name}
-                            <AccountTypeBadge type={account.accountType}>
-                                {account.accountType === 'buyer' ? '구매자' : 
-                                 account.accountType === 'seller' ? '판매자' : '관리자'}
-                            </AccountTypeBadge>
-                        </AccountTitle>
-                        <InfoList>
-                            <InfoItem>
-                                <Label>계정명:</Label>
-                                <Value>{account.accountName}</Value>
-                            </InfoItem>
-                            <InfoItem>
-                                <Label>이메일:</Label>
-                                <Value>{account.email}</Value>
-                            </InfoItem>
-                            <InfoItem>
-                                <Label>전화번호:</Label>
-                                <Value>{account.phone}</Value>
-                            </InfoItem>
-                            <InfoItem>
-                                <Label>주소:</Label>
-                                <Value>{account.address}</Value>
-                            </InfoItem>
-                            {account.carNumber && (
-                                <InfoItem>
-                                    <Label>차량 정보:</Label>
-                                    <Value>{account.carName} ({account.carNumber})</Value>
-                                </InfoItem>
-                            )}
-                        </InfoList>
-                    </AccountItem>
-                ))}
-            </AccountList>
-        </Container>
+        <div className="max-w-7xl mx-auto p-6">
+            <div className="flex justify-between items-center mb-6">
+                <h1 className="text-2xl font-semibold text-gray-800">계정 목록</h1>
+                <button
+                    onClick={() => router.push('/account/create')}
+                    className="px-4 py-2 bg-primary text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                >
+                    새 계정 생성
+                </button>
+            </div>
+
+            <div className="mb-6">
+                <input
+                    type="text"
+                    placeholder="이름, 계정명 또는 이메일로 검색"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                />
+            </div>
+
+            <div className="bg-white shadow-md rounded-lg overflow-hidden">
+                <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                        <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                이름
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                계정명
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                계정 유형
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                이메일
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                연락처
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                주소
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                        {filteredAccounts.map((account) => (
+                            <tr
+                                key={account._id}
+                                onClick={() => router.push(`/account/read/single?id=${account._id}`)}
+                                className="hover:bg-gray-50 cursor-pointer"
+                            >
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    {account.name}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    {account.accountName}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    {account.accountType}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    {account.email}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    {account.phone}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    {account.address}
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     );
 };
 
-export default AccountListComponent;
-
 export const getServerSideProps: GetServerSideProps = async () => {
     try {
+        await client.connect();
         const db = client.db("main");
-        const accounts = await db
-            .collection("accounts")
-            .find({})
-            .toArray();
+        const accounts = await db.collection("accounts").find({}).toArray();
 
         return {
-            props: { accounts: JSON.parse(JSON.stringify(accounts)) },
+            props: {
+                accounts: JSON.parse(JSON.stringify(accounts))
+            }
         };
-    } catch (e) {
-        console.error(e);
-        return { props: { accounts: [] } };
+    } catch (error) {
+        console.error('Error:', error);
+        return {
+            props: {
+                accounts: []
+            }
+        };
     }
-}; 
+};
+
+export default AccountList; 

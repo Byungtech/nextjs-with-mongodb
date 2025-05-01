@@ -1,42 +1,7 @@
-import client from "../../../lib/mongodb";
-import { GetServerSideProps } from 'next';
-import styled from 'styled-components';
+import { useState } from 'react';
 import { useRouter } from 'next/router';
-import { ObjectId } from 'mongodb';
-
-// 계정 정보
-interface AccountInfo {
-    _id: string;
-    accountName: string; // 계정이름
-    accountType: 'buyer' | 'seller' | 'admin';
-    name: string;
-    email: string;
-    phone: string;
-    address: string;
-    carName: string;
-    carNumber: string;
-    carDaeNumber: string; // 차대 번호
-}
-
-// 지점 정보
-interface ZizeomInfo {
-    _id: string;
-    name: string; // 지점 이름
-    address: string; // 지점 주소
-    phone: string; // 지점 번호
-    ownFilmAmount: number; // 필름 얼마나 가지고 있는지
-    consumedFilmAmount: number; // todo: 보증서에 얼마만큼 썼는지의 총합
-    accountId: string; // 대표자 이름
-}
-
-interface ServiceDetailInfo {
-    _id: string;
-    name: string; // 시공 부위
-    consumedFilmAmount: number; // 필름 얼마나 썼는지
-    dueDate: string; // 보증 기간
-    zizeomId: string;
-    orderId: string;
-}
+import { GetServerSideProps } from 'next';
+import client from '../../../lib/mongodb';
 
 interface OrderInfo {
     _id: string;
@@ -47,255 +12,194 @@ interface OrderInfo {
     accountId: string;
     carNumber: string;
     serviceDetailIds: string[];
-    serviceDetails: ServiceDetailInfo[];
-    zizeomInfo: ZizeomInfo;
-    accountInfo: AccountInfo;
+    serviceDetails: {
+        _id: string;
+        name: string;
+        consumedFilmAmount: number;
+        dueDate: string;
+    }[];
 }
 
-interface OrdersProps {
+interface ZizeomInfo {
+    _id: string;
+    name: string;
+    address: string;
+}
+
+interface AccountInfo {
+    _id: string;
+    name: string;
+    accountName: string;
+    accountType: string;
+}
+
+interface OrderListProps {
     orders: OrderInfo[];
+    zizeoms: ZizeomInfo[];
+    accounts: AccountInfo[];
 }
 
-const Container = styled.div`
-    max-width: var(--max-width);
-    margin: 0 auto;
-    padding: 20px;
-    width: 100%;
-
-    @media (max-width: 768px) {
-        padding: 10px;
-    }
-`;
-
-const Title = styled.h1`
-    font-size: 24px;
-    color: #333;
-    margin-bottom: 20px;
-    border-bottom: 2px solid #eee;
-    padding-bottom: 10px;
-
-    @media (max-width: 768px) {
-        font-size: 20px;
-        margin-bottom: 15px;
-    }
-`;
-
-const HeaderContainer = styled.div`
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-`;
-
-const CreateButton = styled.button`
-    background-color: #4CAF50;
-    color: white;
-    padding: 10px 20px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 16px;
-    transition: background-color 0.3s ease;
-
-    &:hover {
-        background-color: #45a049;
-    }
-
-    @media (max-width: 768px) {
-        padding: 8px 16px;
-        font-size: 14px;
-    }
-`;
-
-const OrderList = styled.ul`
-    list-style: none;
-    padding: 0;
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 20px;
-
-    @media (max-width: 768px) {
-        grid-template-columns: 1fr;
-        gap: 15px;
-    }
-`;
-
-const OrderItem = styled.li`
-    padding: 15px;
-    background-color: #fff;
-    border-radius: var(--border-radius);
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    transition: all 0.3s ease;
-    cursor: pointer;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-
-    &:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-    }
-
-    @media (max-width: 768px) {
-        padding: 12px;
-    }
-`;
-
-const OrderTitle = styled.h3`
-    font-size: 18px;
-    color: #444;
-    margin-bottom: 10px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-
-    @media (max-width: 768px) {
-        font-size: 16px;
-        margin-bottom: 8px;
-    }
-`;
-
-const InfoList = styled.ul`
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    flex: 1;
-`;
-
-const InfoItem = styled.li`
-    padding: 8px 0;
-    border-bottom: 1px solid #eee;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    transition: background-color 0.2s ease;
-    font-size: 14px;
-
-    &:last-child {
-        border-bottom: none;
-    }
-
-    @media (max-width: 768px) {
-        padding: 6px 0;
-        font-size: 13px;
-    }
-`;
-
-const Label = styled.span`
-    color: #666;
-    margin-right: 10px;
-`;
-
-const Value = styled.span`
-    font-weight: bold;
-    text-align: right;
-    word-break: break-word;
-    max-width: 60%;
-
-    @media (max-width: 768px) {
-        max-width: 50%;
-    }
-`;
-
-const OrderListComponent = ({ orders }: OrdersProps) => {
+const OrderList = ({ orders, zizeoms, accounts }: OrderListProps) => {
     const router = useRouter();
+    const [searchTerm, setSearchTerm] = useState('');
+    const [selectedZizeom, setSelectedZizeom] = useState('');
+    const [selectedAccount, setSelectedAccount] = useState('');
 
-    const handleOrderClick = (orderId: string) => {
-        router.push(`/order/read/single?id=${orderId}`);
+    const filteredOrders = orders.filter(order => {
+        const matchesSearch = 
+            order.serviceTarget.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            order.carNumber.toLowerCase().includes(searchTerm.toLowerCase());
+        
+        const matchesZizeom = !selectedZizeom || order.zizeomId === selectedZizeom;
+        const matchesAccount = !selectedAccount || order.accountId === selectedAccount;
+
+        return matchesSearch && matchesZizeom && matchesAccount;
+    });
+
+    const getZizeomName = (zizeomId: string) => {
+        const zizeom = zizeoms.find(z => z._id === zizeomId);
+        return zizeom ? zizeom.name : '알 수 없음';
     };
 
-    const handleCreateClick = () => {
-        router.push('/order/create');
+    const getAccountName = (accountId: string) => {
+        const account = accounts.find(a => a._id === accountId);
+        return account ? account.name : '알 수 없음';
     };
 
     return (
-        <Container>
-            <HeaderContainer>
-                <Title>주문 목록</Title>
-                <CreateButton onClick={handleCreateClick}>
-                    주문(보증서) 생성
-                </CreateButton>
-            </HeaderContainer>
-            <OrderList>
-                {orders.map((order) => (
-                    <OrderItem 
-                        key={order._id} 
-                        onClick={() => handleOrderClick(order._id)}
+        <div className="max-w-7xl mx-auto p-6">
+            <div className="flex justify-between items-center mb-6">
+                <h1 className="text-2xl font-semibold text-gray-800">주문 목록</h1>
+                <button
+                    onClick={() => router.push('/order/create')}
+                    className="px-4 py-2 bg-primary text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                >
+                    새 주문 생성
+                </button>
+            </div>
+
+            <div className="mb-6 space-y-4">
+                <div className="flex gap-4">
+                    <input
+                        type="text"
+                        placeholder="서비스 품목 또는 차량 번호로 검색"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                    />
+                    <select
+                        value={selectedZizeom}
+                        onChange={(e) => setSelectedZizeom(e.target.value)}
+                        className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                     >
-                        <OrderTitle>주문 정보</OrderTitle>
-                        <InfoList>
-                            <InfoItem>
-                                <Label>서비스 품목:</Label>
-                                <Value>{order.serviceTarget}</Value>
-                            </InfoItem>
-                            <InfoItem>
-                                <Label>시공 일자:</Label>
-                                <Value>{order.serviceDate}</Value>
-                            </InfoItem>
-                            <InfoItem>
-                                <Label>시공 금액:</Label>
-                                <Value>{order.servicePrice}</Value>
-                            </InfoItem>
-                            <InfoItem>
-                                <Label>차량 번호:</Label>
-                                <Value>{order.carNumber}</Value>
-                            </InfoItem>
-                            <InfoItem>
-                                <Label>지점:</Label>
-                                <Value>{order.zizeomInfo?.name}</Value>
-                            </InfoItem>
-                            <InfoItem>
-                                <Label>고객:</Label>
-                                <Value>{order.accountInfo?.name}</Value>
-                            </InfoItem>
-                        </InfoList>
-                    </OrderItem>
-                ))}
-            </OrderList>
-        </Container>
+                        <option value="">모든 지점</option>
+                        {zizeoms.map(zizeom => (
+                            <option key={zizeom._id} value={zizeom._id}>
+                                {zizeom.name}
+                            </option>
+                        ))}
+                    </select>
+                    <select
+                        value={selectedAccount}
+                        onChange={(e) => setSelectedAccount(e.target.value)}
+                        className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                    >
+                        <option value="">모든 계정</option>
+                        {accounts.map(account => (
+                            <option key={account._id} value={account._id}>
+                                {account.name}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+            </div>
+
+            <div className="bg-white shadow-md rounded-lg overflow-hidden">
+                <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                        <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                서비스 품목
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                시공 일자
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                시공 금액
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                지점
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                계정
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                차량 번호
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                        {filteredOrders.map((order) => (
+                            <tr
+                                key={order._id}
+                                onClick={() => router.push(`/order/read/single?id=${order._id}`)}
+                                className="hover:bg-gray-50 cursor-pointer"
+                            >
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    {order.serviceTarget}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    {order.serviceDate}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    {Number(order.servicePrice).toLocaleString()}원
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    {getZizeomName(order.zizeomId)}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    {getAccountName(order.accountId)}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    {order.carNumber}
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     );
 };
 
-export default OrderListComponent;
-
 export const getServerSideProps: GetServerSideProps = async () => {
     try {
+        await client.connect();
         const db = client.db("main");
-        const orders = await db
-            .collection("orders")
-            .aggregate([
-                {
-                    $lookup: {
-                        from: "zizeoms",
-                        localField: "zizeomId",
-                        foreignField: "_id",
-                        as: "zizeomInfo"
-                    }
-                },
-                {
-                    $lookup: {
-                        from: "accounts",
-                        localField: "accountId",
-                        foreignField: "_id",
-                        as: "accountInfo"
-                    }
-                },
-                {
-                    $addFields: {
-                        zizeomInfo: { $arrayElemAt: ["$zizeomInfo", 0] },
-                        accountInfo: { $arrayElemAt: ["$accountInfo", 0] }
-                    }
-                }
-            ])
-            .toArray();
+
+        const [orders, zizeoms, accounts] = await Promise.all([
+            db.collection("orders").find({}).toArray(),
+            db.collection("zizeoms").find({}).toArray(),
+            db.collection("accounts").find({}).toArray()
+        ]);
 
         return {
-            props: { 
-                orders: JSON.parse(JSON.stringify(orders))
-            },
+            props: {
+                orders: JSON.parse(JSON.stringify(orders)),
+                zizeoms: JSON.parse(JSON.stringify(zizeoms)),
+                accounts: JSON.parse(JSON.stringify(accounts))
+            }
         };
-    } catch (e) {
-        console.error(e);
-        return { props: { orders: [] } };
+    } catch (error) {
+        console.error('Error:', error);
+        return {
+            props: {
+                orders: [],
+                zizeoms: [],
+                accounts: []
+            }
+        };
     }
 };
+
+export default OrderList;

@@ -1,91 +1,10 @@
 import Head from "next/head";
 import client from "../lib/mongodb";
 import type { InferGetServerSidePropsType, GetServerSideProps } from "next";
-import styled from 'styled-components';
 
 type ConnectionStatus = {
   isConnected: boolean;
 };
-
-const Container = styled.div`
-  min-height: 100vh;
-  padding: 0 0.5rem;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-`;
-
-const Main = styled.main`
-  padding: 5rem 0;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-`;
-
-const Title = styled.h1`
-  margin: 0;
-  line-height: 1.15;
-  font-size: 4rem;
-  text-align: center;
-  color: #0070f3;
-`;
-
-const Subtitle = styled.h2`
-  font-size: 2rem;
-  text-align: center;
-  margin: 1rem 0;
-`;
-
-const Grid = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-wrap: wrap;
-  max-width: 800px;
-  margin-top: 3rem;
-`;
-
-const Card = styled.a`
-  margin: 1rem;
-  flex-basis: 45%;
-  padding: 1.5rem;
-  text-align: left;
-  color: inherit;
-  text-decoration: none;
-  border: 1px solid #eaeaea;
-  border-radius: 10px;
-  transition: all 0.3s ease;
-
-  &:hover {
-    color: #0070f3;
-    border-color: #0070f3;
-    transform: translateY(-5px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-  }
-`;
-
-const CardTitle = styled.h3`
-  margin: 0 0 1rem 0;
-  font-size: 1.5rem;
-`;
-
-const CardDescription = styled.p`
-  margin: 0;
-  font-size: 1.25rem;
-  line-height: 1.5;
-`;
-
-const Footer = styled.footer`
-  width: 100%;
-  height: 100px;
-  border-top: 1px solid #eaeaea;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-`;
 
 export const getServerSideProps: GetServerSideProps<ConnectionStatus> = async () => {
   try {
@@ -114,214 +33,81 @@ export default function Home({
   isConnected,
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
   return (
-    <Container>
+    <div className="min-h-screen flex flex-col items-center justify-center px-4">
       <Head>
         <title>필름 시공 관리 시스템</title>
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      <Main>
-        <Title>필름 시공 관리 시스템</Title>
+      <main className="flex-1 flex flex-col items-center justify-center py-20">
+        <h1 className="text-6xl font-bold text-primary mb-4">
+          필름 시공 관리 시스템
+        </h1>
 
         {isConnected ? (
-          <Subtitle>현재 MongoDB에 연결되었습니다.</Subtitle>
+          <h2 className="text-3xl text-center mb-12">
+            현재 MongoDB에 연결되었습니다.
+          </h2>
         ) : (
-          <Subtitle>
-            MongoDB 연결에 실패했습니다. <code>README.md</code>를 확인해주세요.
-          </Subtitle>
+          <h2 className="text-3xl text-center mb-12">
+            MongoDB 연결에 실패했습니다. <code className="bg-gray-100 px-2 py-1 rounded">README.md</code>를 확인해주세요.
+          </h2>
         )}
 
-        <Grid>
-          <Card href="/order/read/multiple">
-            <CardTitle>주문 관리</CardTitle>
-            <CardDescription>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl w-full">
+          <a
+            href="/order/read/multiple"
+            className="p-6 border border-gray-200 rounded-lg hover:border-primary hover:text-primary hover:-translate-y-1 transition-all duration-300 hover:shadow-lg"
+          >
+            <h3 className="text-2xl font-semibold mb-4">주문 관리</h3>
+            <p className="text-lg text-gray-600">
               주문 목록 조회, 상세 정보 확인, 새로운 주문 생성
-            </CardDescription>
-          </Card>
+            </p>
+          </a>
 
-          <Card href="/zizeom/read/multiple">
-            <CardTitle>지점 관리</CardTitle>
-            <CardDescription>
+          <a
+            href="/zizeom/read/multiple"
+            className="p-6 border border-gray-200 rounded-lg hover:border-primary hover:text-primary hover:-translate-y-1 transition-all duration-300 hover:shadow-lg"
+          >
+            <h3 className="text-2xl font-semibold mb-4">지점 관리</h3>
+            <p className="text-lg text-gray-600">
               지점 목록 조회, 상세 정보 확인, 새로운 지점 생성
-            </CardDescription>
-          </Card>
+            </p>
+          </a>
 
-          <Card href="/account/read/multiple">
-            <CardTitle>계정 관리</CardTitle>
-            <CardDescription>
+          <a
+            href="/account/read/multiple"
+            className="p-6 border border-gray-200 rounded-lg hover:border-primary hover:text-primary hover:-translate-y-1 transition-all duration-300 hover:shadow-lg"
+          >
+            <h3 className="text-2xl font-semibold mb-4">계정 관리</h3>
+            <p className="text-lg text-gray-600">
               계정 목록 조회, 상세 정보 확인, 새로운 계정 생성
-            </CardDescription>
-          </Card>
+            </p>
+          </a>
 
-          <Card href="/inventory">
-            <CardTitle>재고 관리</CardTitle>
-            <CardDescription>
+          <a
+            href="/inventory"
+            className="p-6 border border-gray-200 rounded-lg hover:border-primary hover:text-primary hover:-translate-y-1 transition-all duration-300 hover:shadow-lg"
+          >
+            <h3 className="text-2xl font-semibold mb-4">재고 관리</h3>
+            <p className="text-lg text-gray-600">
               필름 재고 현황 조회 및 관리
-            </CardDescription>
-          </Card>
-        </Grid>
-      </Main>
+            </p>
+          </a>
+        </div>
+      </main>
 
-      <Footer>
+      <footer className="w-full h-24 border-t border-gray-200 flex items-center justify-center">
         <a
           href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
           target="_blank"
           rel="noopener noreferrer"
+          className="flex items-center"
         >
           Powered by{" "}
-          <img src="/vercel.svg" alt="Vercel Logo" style={{ height: '1em', marginLeft: '0.5rem' }} />
+          <img src="/vercel.svg" alt="Vercel Logo" className="h-4 ml-2" />
         </a>
-      </Footer>
-
-      <style jsx>{`
-        .container {
-          min-height: 100vh;
-          padding: 0 0.5rem;
-          display: flex;
-          flex-direction: column;
-          justify-content: center;
-          align-items: center;
-        }
-
-        main {
-          padding: 5rem 0;
-          flex: 1;
-          display: flex;
-          flex-direction: column;
-          justify-content: center;
-          align-items: center;
-        }
-
-        footer {
-          width: 100%;
-          height: 100px;
-          border-top: 1px solid #eaeaea;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-        }
-
-        footer img {
-          margin-left: 0.5rem;
-        }
-
-        footer a {
-          display: flex;
-          justify-content: center;
-          align-items: center;
-        }
-
-        a {
-          color: inherit;
-          text-decoration: none;
-        }
-
-        .title a {
-          color: #0070f3;
-          text-decoration: none;
-        }
-
-        .title a:hover,
-        .title a:focus,
-        .title a:active {
-          text-decoration: underline;
-        }
-
-        .title {
-          margin: 0;
-          line-height: 1.15;
-          font-size: 4rem;
-        }
-
-        .title,
-        .description {
-          text-align: center;
-        }
-
-        .subtitle {
-          font-size: 2rem;
-        }
-
-        .description {
-          line-height: 1.5;
-          font-size: 1.5rem;
-        }
-
-        code {
-          background: #fafafa;
-          border-radius: 5px;
-          padding: 0.75rem;
-          font-size: 1.1rem;
-          font-family: Menlo, Monaco, Lucida Console, Liberation Mono,
-            DejaVu Sans Mono, Bitstream Vera Sans Mono, Courier New, monospace;
-        }
-
-        .grid {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          flex-wrap: wrap;
-
-          max-width: 800px;
-          margin-top: 3rem;
-        }
-
-        .card {
-          margin: 1rem;
-          flex-basis: 45%;
-          padding: 1.5rem;
-          text-align: left;
-          color: inherit;
-          text-decoration: none;
-          border: 1px solid #eaeaea;
-          border-radius: 10px;
-          transition: color 0.15s ease, border-color 0.15s ease;
-        }
-
-        .card:hover,
-        .card:focus,
-        .card:active {
-          color: #0070f3;
-          border-color: #0070f3;
-        }
-
-        .card h3 {
-          margin: 0 0 1rem 0;
-          font-size: 1.5rem;
-        }
-
-        .card p {
-          margin: 0;
-          font-size: 1.25rem;
-          line-height: 1.5;
-        }
-
-        .logo {
-          height: 1em;
-        }
-
-        @media (max-width: 600px) {
-          .grid {
-            width: 100%;
-            flex-direction: column;
-          }
-        }
-      `}</style>
-
-      <style jsx global>{`
-        html,
-        body {
-          padding: 0;
-          margin: 0;
-          font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto,
-            Oxygen, Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue,
-            sans-serif;
-        }
-
-        * {
-          box-sizing: border-box;
-        }
-      `}</style>
-    </Container>
+      </footer>
+    </div>
   );
 }

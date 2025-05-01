@@ -1,149 +1,122 @@
 import { useState } from 'react';
-import styled from 'styled-components';
 import { useRouter } from 'next/router';
 import { useAuth } from '../contexts/AuthContext';
 import Logo from '../components/Logo';
 
-const Container = styled.div`
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-    background-color: #f5f5f5;
-`;
-
-const LogoWrapper = styled.div`
-    margin-bottom: 2rem;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 1rem;
-`;
-
-const LogoContainer = styled.div`
-    transform: scale(1.5);
-    transform-origin: center;
-`;
-
-const SystemTitle = styled.h1`
-    font-size: 1.5rem;
-    color: #333;
-    font-weight: 500;
-    text-align: center;
-`;
-
-const LoginForm = styled.form`
-    background: white;
-    padding: 2rem;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    width: 100%;
-    max-width: 400px;
-`;
-
-const Title = styled.h1`
-    text-align: center;
-    color: #333;
-    margin-bottom: 2rem;
-`;
-
-const Input = styled.input`
-    width: 100%;
-    padding: 0.75rem;
-    margin-bottom: 1rem;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 1rem;
-
-    &:focus {
-        outline: none;
-        border-color: #007bff;
-    }
-`;
-
-const Button = styled.button`
-    width: 100%;
-    padding: 0.75rem;
-    background-color: #007bff;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    font-size: 1rem;
-    cursor: pointer;
-    transition: background-color 0.2s;
-
-    &:hover {
-        background-color: #0056b3;
-    }
-`;
-
-const ErrorMessage = styled.div`
-    color: #dc3545;
-    margin-bottom: 1rem;
-    text-align: center;
-`;
-
-export default function Login() {
-    const [accountName, setAccountName] = useState('');
-    const [password, setPassword] = useState('');
-    const [error, setError] = useState('');
+const Login = () => {
     const router = useRouter();
     const { login } = useAuth();
+    const [formData, setFormData] = useState({
+        accountName: '',
+        password: ''
+    });
+    const [error, setError] = useState('');
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setError('');
-
         try {
             const response = await fetch('/api/auth/login', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ accountName, password }),
+                body: JSON.stringify(formData),
             });
 
-            const data = await response.json();
-
             if (response.ok) {
+                const data = await response.json();
                 login(data.user);
                 router.push('/');
             } else {
-                setError(data.message || '로그인에 실패했습니다.');
+                setError('계정명 또는 비밀번호가 올바르지 않습니다.');
             }
-        } catch (err) {
-            setError('서버 오류가 발생했습니다.');
+        } catch (error) {
+            console.error('Error:', error);
+            setError('로그인 중 오류가 발생했습니다.');
         }
     };
 
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({
+            ...prev,
+            [name]: value
+        }));
+    };
+
     return (
-        <Container>
-            <LogoWrapper>
-                <LogoContainer>
+        <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+            <div className="sm:mx-auto sm:w-full sm:max-w-md">
+                <div className="flex justify-center">
                     <Logo />
-                </LogoContainer>
-                <SystemTitle>주문 및 지점 관리 시스템</SystemTitle>
-            </LogoWrapper>
-            <LoginForm onSubmit={handleSubmit}>
-                <Title>로그인</Title>
-                {error && <ErrorMessage>{error}</ErrorMessage>}
-                <Input
-                    type="text"
-                    placeholder="아이디"
-                    value={accountName}
-                    onChange={(e) => setAccountName(e.target.value)}
-                    required
-                />
-                <Input
-                    type="password"
-                    placeholder="비밀번호"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                />
-                <Button type="submit">로그인</Button>
-            </LoginForm>
-        </Container>
+                </div>
+                <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+                    주문 및 지점 관리 시스템
+                </h2>
+            </div>
+
+            <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+                <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+                    <form className="space-y-6" onSubmit={handleSubmit}>
+                        <div>
+                            <label htmlFor="accountName" className="block text-sm font-medium text-gray-700">
+                                계정명
+                            </label>
+                            <div className="mt-1">
+                                <input
+                                    id="accountName"
+                                    name="accountName"
+                                    type="text"
+                                    required
+                                    value={formData.accountName}
+                                    onChange={handleChange}
+                                    className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
+                                />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                                비밀번호
+                            </label>
+                            <div className="mt-1">
+                                <input
+                                    id="password"
+                                    name="password"
+                                    type="password"
+                                    required
+                                    value={formData.password}
+                                    onChange={handleChange}
+                                    className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
+                                />
+                            </div>
+                        </div>
+
+                        {error && (
+                            <div className="rounded-md bg-red-50 p-4">
+                                <div className="flex">
+                                    <div className="ml-3">
+                                        <h3 className="text-sm font-medium text-red-800">
+                                            {error}
+                                        </h3>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        <div>
+                            <button
+                                type="submit"
+                                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+                            >
+                                로그인
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
     );
-} 
+};
+
+export default Login; 

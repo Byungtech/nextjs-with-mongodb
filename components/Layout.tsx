@@ -1,30 +1,15 @@
-import { useRouter } from 'next/router';
-import styled from 'styled-components';
-import Header from './Header';
-
-const LayoutContainer = styled.div`
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-`;
-
-const Main = styled.main`
-    flex: 1;
-    padding: 1rem;
-`;
+import { ReactNode } from 'react';
 
 interface LayoutProps {
-    children: React.ReactNode;
+    children: ReactNode;
 }
 
 export default function Layout({ children }: LayoutProps) {
-    const router = useRouter();
-    const isLoginPage = router.pathname === '/login';
-
     return (
-        <LayoutContainer>
-            {!isLoginPage && <Header />}
-            <Main>{children}</Main>
-        </LayoutContainer>
+        <div className="min-h-screen bg-gray-50">
+            <main className="max-w-7xl mx-auto px-4 py-8">
+                {children}
+            </main>
+        </div>
     );
 } 

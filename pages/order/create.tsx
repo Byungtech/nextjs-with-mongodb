@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import styled from 'styled-components';
 import { useRouter } from 'next/router';
 import { GetServerSideProps } from 'next';
 import client from '../../lib/mongodb';
@@ -43,103 +42,6 @@ interface CreateOrderProps {
     zizeoms: ZizeomInfo[];
     accounts: AccountInfo[];
 }
-
-const Container = styled.div`
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 20px;
-`;
-
-const Title = styled.h1`
-    font-size: 24px;
-    color: #333;
-    margin-bottom: 20px;
-    border-bottom: 2px solid #eee;
-    padding-bottom: 10px;
-`;
-
-const Form = styled.form`
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-`;
-
-const FormGroup = styled.div`
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-`;
-
-const Label = styled.label`
-    font-size: 16px;
-    color: #444;
-    font-weight: 500;
-`;
-
-const Input = styled.input`
-    padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 16px;
-    
-    &:focus {
-        outline: none;
-        border-color: #007bff;
-    }
-`;
-
-const Select = styled.select`
-    padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 16px;
-    background-color: white;
-    
-    &:focus {
-        outline: none;
-        border-color: #007bff;
-    }
-`;
-
-const ServiceDetailsContainer = styled.div`
-    border: 1px solid #ddd;
-    padding: 20px;
-    border-radius: 4px;
-    margin-top: 20px;
-`;
-
-const ServiceDetailItem = styled.div`
-    display: flex;
-    gap: 10px;
-    margin-bottom: 10px;
-    padding: 10px;
-    border: 1px solid #eee;
-    border-radius: 4px;
-`;
-
-const Button = styled.button`
-    padding: 12px 24px;
-    background-color: #007bff;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    font-size: 16px;
-    cursor: pointer;
-    transition: background-color 0.2s;
-
-    &:hover {
-        background-color: #0056b3;
-    }
-`;
-
-const AddButton = styled(Button)`
-    background-color: #28a745;
-    margin-top: 10px;
-
-    &:hover {
-        background-color: #218838;
-    }
-`;
 
 const OrderForm = ({ zizeoms, accounts }: CreateOrderProps) => {
     const router = useRouter();
@@ -231,151 +133,193 @@ const OrderForm = ({ zizeoms, accounts }: CreateOrderProps) => {
     };
 
     return (
-        <Container>
-            <Title>새 주문 생성</Title>
-            <Form onSubmit={handleSubmit}>
-                <FormGroup>
-                    <Label>서비스 품목</Label>
-                    <Input
-                        type="text"
-                        name="serviceTarget"
-                        value={orderInfo.serviceTarget}
-                        onChange={handleOrderChange}
-                        required
-                    />
-                </FormGroup>
-
-                <FormGroup>
-                    <Label>시공 일자</Label>
-                    <Input
-                        type="date"
-                        name="serviceDate"
-                        value={orderInfo.serviceDate}
-                        onChange={handleOrderChange}
-                        required
-                    />
-                </FormGroup>
-
-                <FormGroup>
-                    <Label>시공 금액</Label>
-                    <Input
-                        type="text"
-                        name="servicePrice"
-                        value={orderInfo.servicePrice}
-                        onChange={handleOrderChange}
-                        required
-                        placeholder="숫자만 입력하세요"
-                    />
-                </FormGroup>
-
-                <FormGroup>
-                    <Label>지점</Label>
-                    <Select
-                        name="zizeomId"
-                        value={orderInfo.zizeomId}
-                        onChange={handleOrderChange}
-                        required
-                    >
-                        <option value="">지점을 선택하세요</option>
-                        {zizeoms.map((zizeom) => (
-                            <option key={zizeom._id} value={zizeom._id}>
-                                {zizeom.name} - {zizeom.address}
-                            </option>
-                        ))}
-                    </Select>
-                </FormGroup>
-
-                <FormGroup>
-                    <Label>계정</Label>
-                    <Select
-                        name="accountId"
-                        value={orderInfo.accountId}
-                        onChange={handleOrderChange}
-                        required
-                    >
-                        <option value="">계정을 선택하세요</option>
-                        {sellerAccounts.map((account) => (
-                            <option key={account._id} value={account._id}>
-                                {account.name} ({account.accountName})
-                            </option>
-                        ))}
-                    </Select>
-                </FormGroup>
-
-                <FormGroup>
-                    <Label>차량 번호</Label>
-                    <Input
-                        type="text"
-                        name="carNumber"
-                        value={orderInfo.carNumber}
-                        onChange={handleOrderChange}
-                        required
-                    />
-                </FormGroup>
-
-                <ServiceDetailsContainer>
-                    <h3>서비스 상세 정보</h3>
-                    <FormGroup>
-                        <Label>시공 부위</Label>
-                        <Input
+        <div className="max-w-3xl mx-auto p-6">
+            <h1 className="text-2xl font-semibold text-gray-800 mb-6 pb-4 border-b border-gray-200">
+                새 주문 생성
+            </h1>
+            <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="space-y-4">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            서비스 품목
+                        </label>
+                        <input
                             type="text"
-                            name="name"
-                            value={serviceDetail.name}
-                            onChange={handleServiceDetailChange}
+                            name="serviceTarget"
+                            value={orderInfo.serviceTarget}
+                            onChange={handleOrderChange}
+                            required
+                            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                         />
-                    </FormGroup>
+                    </div>
 
-                    <FormGroup>
-                        <Label>필름 사용량</Label>
-                        <Input
-                            type="number"
-                            name="consumedFilmAmount"
-                            value={serviceDetail.consumedFilmAmount}
-                            onChange={handleServiceDetailChange}
-                        />
-                    </FormGroup>
-
-                    <FormGroup>
-                        <Label>보증 기간</Label>
-                        <Input
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            시공 일자
+                        </label>
+                        <input
                             type="date"
-                            name="dueDate"
-                            value={serviceDetail.dueDate}
-                            onChange={handleServiceDetailChange}
+                            name="serviceDate"
+                            value={orderInfo.serviceDate}
+                            onChange={handleOrderChange}
+                            required
+                            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                         />
-                    </FormGroup>
+                    </div>
 
-                    <AddButton type="button" onClick={addServiceDetail}>
-                        서비스 상세 추가
-                    </AddButton>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            시공 금액
+                        </label>
+                        <input
+                            type="text"
+                            name="servicePrice"
+                            value={orderInfo.servicePrice}
+                            onChange={handleOrderChange}
+                            required
+                            placeholder="숫자만 입력하세요"
+                            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                        />
+                    </div>
 
-                    {orderInfo.serviceDetails?.map((detail, index) => (
-                        <ServiceDetailItem key={index}>
-                            <div>
-                                <strong>시공 부위:</strong> {detail.name}
-                            </div>
-                            <div>
-                                <strong>필름 사용량:</strong> {detail.consumedFilmAmount}
-                            </div>
-                            <div>
-                                <strong>보증 기간:</strong> {detail.dueDate}
-                            </div>
-                        </ServiceDetailItem>
-                    ))}
-                </ServiceDetailsContainer>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            지점
+                        </label>
+                        <select
+                            name="zizeomId"
+                            value={orderInfo.zizeomId}
+                            onChange={handleOrderChange}
+                            required
+                            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                        >
+                            <option value="">지점을 선택하세요</option>
+                            {zizeoms.map(zizeom => (
+                                <option key={zizeom._id} value={zizeom._id}>
+                                    {zizeom.name} ({zizeom.address})
+                                </option>
+                            ))}
+                        </select>
+                    </div>
 
-                <Button type="submit">주문 생성</Button>
-            </Form>
-        </Container>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            계정
+                        </label>
+                        <select
+                            name="accountId"
+                            value={orderInfo.accountId}
+                            onChange={handleOrderChange}
+                            required
+                            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                        >
+                            <option value="">계정을 선택하세요</option>
+                            {sellerAccounts.map(account => (
+                                <option key={account._id} value={account._id}>
+                                    {account.name} ({account.accountName})
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            차량 번호
+                        </label>
+                        <input
+                            type="text"
+                            name="carNumber"
+                            value={orderInfo.carNumber}
+                            onChange={handleOrderChange}
+                            required
+                            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                        />
+                    </div>
+                </div>
+
+                <div className="border border-gray-200 rounded-lg p-6 mt-8">
+                    <h2 className="text-lg font-medium text-gray-800 mb-4">시공 상세 정보</h2>
+                    <div className="space-y-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                시공 부위
+                            </label>
+                            <input
+                                type="text"
+                                name="name"
+                                value={serviceDetail.name}
+                                onChange={handleServiceDetailChange}
+                                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                소모 필름량
+                            </label>
+                            <input
+                                type="number"
+                                name="consumedFilmAmount"
+                                value={serviceDetail.consumedFilmAmount}
+                                onChange={handleServiceDetailChange}
+                                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                보증 기간
+                            </label>
+                            <input
+                                type="date"
+                                name="dueDate"
+                                value={serviceDetail.dueDate}
+                                onChange={handleServiceDetailChange}
+                                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                            />
+                        </div>
+
+                        <button
+                            type="button"
+                            onClick={addServiceDetail}
+                            className="w-full px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+                        >
+                            시공 상세 정보 추가
+                        </button>
+                    </div>
+
+                    {orderInfo.serviceDetails && orderInfo.serviceDetails.length > 0 && (
+                        <div className="mt-6 space-y-4">
+                            {orderInfo.serviceDetails.map((detail, index) => (
+                                <div
+                                    key={index}
+                                    className="p-4 border border-gray-200 rounded-md bg-gray-50"
+                                >
+                                    <p className="font-medium">시공 부위: {detail.name}</p>
+                                    <p>소모 필름량: {detail.consumedFilmAmount}</p>
+                                    <p>보증 기간: {detail.dueDate}</p>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
+                <button
+                    type="submit"
+                    className="w-full px-4 py-2 bg-primary text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                >
+                    주문 생성
+                </button>
+            </form>
+        </div>
     );
 };
 
-export default OrderForm;
-
 export const getServerSideProps: GetServerSideProps = async () => {
     try {
+        await client.connect();
         const db = client.db("main");
-        
+
         const [zizeoms, accounts] = await Promise.all([
             db.collection("zizeoms").find({}).toArray(),
             db.collection("accounts").find({}).toArray()
@@ -387,8 +331,8 @@ export const getServerSideProps: GetServerSideProps = async () => {
                 accounts: JSON.parse(JSON.stringify(accounts))
             }
         };
-    } catch (e) {
-        console.error(e);
+    } catch (error) {
+        console.error('Error:', error);
         return {
             props: {
                 zizeoms: [],
@@ -397,3 +341,5 @@ export const getServerSideProps: GetServerSideProps = async () => {
         };
     }
 };
+
+export default OrderForm;
