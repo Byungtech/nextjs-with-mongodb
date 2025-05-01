@@ -1,6 +1,7 @@
 import { useRouter } from 'next/router';
 import { GetServerSideProps } from 'next';
 import client from '../../../lib/mongodb';
+import { ObjectId } from 'mongodb';
 
 interface AccountInfo {
     _id: string;
@@ -24,7 +25,7 @@ interface ZizeomInfo {
 
 interface ZizeomDetailProps {
     zizeom: ZizeomInfo;
-    account: AccountInfo;
+    account: AccountInfo | null;
 }
 
 const ZizeomDetail = ({ zizeom, account }: ZizeomDetailProps) => {
@@ -78,39 +79,41 @@ const ZizeomDetail = ({ zizeom, account }: ZizeomDetailProps) => {
                         </div>
                     </div>
 
-                    <div className="border-t border-gray-200 pt-6">
-                        <h2 className="text-lg font-medium text-gray-800 mb-4">대표자 정보</h2>
-                        <div className="grid grid-cols-2 gap-6">
-                            <div>
-                                <div className="space-y-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-600">이름</label>
-                                        <p className="mt-1 text-gray-900">{account.name}</p>
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-600">계정명</label>
-                                        <p className="mt-1 text-gray-900">{account.accountName}</p>
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-600">이메일</label>
-                                        <p className="mt-1 text-gray-900">{account.email}</p>
+                    {account && (
+                        <div className="border-t border-gray-200 pt-6">
+                            <h2 className="text-lg font-medium text-gray-800 mb-4">대표자 정보</h2>
+                            <div className="grid grid-cols-2 gap-6">
+                                <div>
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-600">이름</label>
+                                            <p className="mt-1 text-gray-900">{account.name}</p>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-600">계정명</label>
+                                            <p className="mt-1 text-gray-900">{account.accountName}</p>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-600">이메일</label>
+                                            <p className="mt-1 text-gray-900">{account.email}</p>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                            <div>
-                                <div className="space-y-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-600">연락처</label>
-                                        <p className="mt-1 text-gray-900">{account.phone}</p>
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-600">주소</label>
-                                        <p className="mt-1 text-gray-900">{account.address}</p>
+                                <div>
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-600">연락처</label>
+                                            <p className="mt-1 text-gray-900">{account.phone}</p>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-600">주소</label>
+                                            <p className="mt-1 text-gray-900">{account.address}</p>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    )}
                 </div>
             </div>
         </div>
@@ -129,19 +132,33 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
         await client.connect();
         const db = client.db("main");
 
-        const zizeom = await db.collection("zizeoms").findOne({ _id: id });
+        console.log('Fetching zizeom with ID:', id);
+        const zizeom = await db.collection("zizeoms").findOne({ _id: new ObjectId(id) });
+        console.log('Found zizeom:', zizeom);
+
         if (!zizeom) {
             return {
                 notFound: true
             };
         }
 
-        const account = await db.collection("accounts").findOne({ _id: zizeom.accountId });
+        let account = null;
+        if (zizeom.accountId) {
+            console.log('Fetching account with ID:', zizeom.accountId);
+            // accountId가 MongoDB ObjectId 형식인지 확인
+            try {
+                account = await db.collection("accounts").findOne({ _id: new ObjectId(zizeom.accountId) });
+            } catch (error) {
+                // ObjectId 형식이 아닌 경우 일반 문자열로 검색
+                account = await db.collection("accounts").findOne({ _id: zizeom.accountId });
+            }
+            console.log('Found account:', account);
+        }
 
         return {
             props: {
                 zizeom: JSON.parse(JSON.stringify(zizeom)),
-                account: JSON.parse(JSON.stringify(account))
+                account: account ? JSON.parse(JSON.stringify(account)) : null
             }
         };
     } catch (error) {

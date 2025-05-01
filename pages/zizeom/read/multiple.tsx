@@ -89,7 +89,7 @@ const ZizeomList = ({ zizeoms, accounts }: ZizeomListProps) => {
                         {filteredZizeoms.map((zizeom) => (
                             <tr
                                 key={zizeom._id}
-                                onClick={() => router.push(`/zizeom/read/single?id=${zizeom._id}`)}
+                                onClick={() => router.push(`/zizeom/read/${zizeom._id}`)}
                                 className="hover:bg-gray-50 cursor-pointer"
                             >
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">

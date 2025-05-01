@@ -1,6 +1,7 @@
 import { useRouter } from 'next/router';
 import { GetServerSideProps } from 'next';
 import client from '../../../lib/mongodb';
+import { ObjectId } from 'mongodb';
 
 // 계정 정보
 interface AccountInfo {
@@ -126,7 +127,7 @@ const ZizeomDetail = ({ zizeom, account }: ZizeomDetailProps) => {
 export const getServerSideProps: GetServerSideProps = async (context) => {
     try {
         const { id } = context.query;
-        if (!id) {
+        if (!id || typeof id !== 'string') {
             return {
                 notFound: true
             };
@@ -135,19 +136,19 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
         await client.connect();
         const db = client.db("main");
 
-        const zizeom = await db.collection("zizeoms").findOne({ _id: id });
+        const zizeom = await db.collection("zizeoms").findOne({ _id: new ObjectId(id) });
         if (!zizeom) {
             return {
                 notFound: true
             };
         }
 
-        const account = await db.collection("accounts").findOne({ _id: zizeom.accountId });
+        const account = await db.collection("accounts").findOne({ _id: new ObjectId(zizeom.accountId) });
 
         return {
             props: {
                 zizeom: JSON.parse(JSON.stringify(zizeom)),
-                account: JSON.parse(JSON.stringify(account))
+                account: account ? JSON.parse(JSON.stringify(account)) : null
             }
         };
     } catch (error) {

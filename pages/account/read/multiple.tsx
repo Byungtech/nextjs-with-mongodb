@@ -17,6 +17,19 @@ interface AccountListProps {
     accounts: AccountInfo[];
 }
 
+const getAccountTypeBadge = (type: string) => {
+    switch (type) {
+        case 'admin':
+            return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">관리자</span>;
+        case 'seller':
+            return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">판매자</span>;
+        case 'buyer':
+            return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">구매자</span>;
+        default:
+            return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">{type}</span>;
+    }
+};
+
 const AccountList = ({ accounts }: AccountListProps) => {
     const router = useRouter();
     const [searchTerm, setSearchTerm] = useState('');
@@ -87,7 +100,7 @@ const AccountList = ({ accounts }: AccountListProps) => {
                                     {account.accountName}
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    {account.accountType}
+                                    {getAccountTypeBadge(account.accountType)}
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                     {account.email}

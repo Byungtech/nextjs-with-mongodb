@@ -1,6 +1,7 @@
 import { useRouter } from 'next/router';
 import { GetServerSideProps } from 'next';
 import client from '../../../lib/mongodb';
+import { ObjectId } from 'mongodb';
 
 interface AccountInfo {
     _id: string;
@@ -110,7 +111,7 @@ const AccountDetail = ({ account }: AccountDetailProps) => {
 export const getServerSideProps: GetServerSideProps = async (context) => {
     try {
         const { id } = context.query;
-        if (!id) {
+        if (!id || typeof id !== 'string') {
             return {
                 notFound: true
             };
@@ -119,7 +120,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
         await client.connect();
         const db = client.db("main");
 
-        const account = await db.collection("accounts").findOne({ _id: id });
+        const account = await db.collection("accounts").findOne({ _id: new ObjectId(id) });
         if (!account) {
             return {
                 notFound: true

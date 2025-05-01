@@ -1,6 +1,7 @@
 import { useRouter } from 'next/router';
 import { GetServerSideProps } from 'next';
 import client from '../../../lib/mongodb';
+import { ObjectId } from 'mongodb';
 
 interface ServiceDetailInfo {
     _id: string;
@@ -85,16 +86,16 @@ const OrderDetail = ({ order, zizeom, account }: OrderDetailProps) => {
                         <div>
                             <h2 className="text-lg font-medium text-gray-800 mb-4">관련 정보</h2>
                             <div className="space-y-4">
-                                <div>
+                                {!!zizeom && (<div>
                                     <label className="block text-sm font-medium text-gray-600">지점</label>
                                     <p className="mt-1 text-gray-900">{zizeom.name}</p>
                                     <p className="mt-1 text-sm text-gray-500">{zizeom.address}</p>
-                                </div>
-                                <div>
+                                </div>)}
+                                {!!account && <div>
                                     <label className="block text-sm font-medium text-gray-600">계정</label>
                                     <p className="mt-1 text-gray-900">{account.name}</p>
                                     <p className="mt-1 text-sm text-gray-500">{account.accountName}</p>
-                                </div>
+                                </div>}
                             </div>
                         </div>
                     </div>
@@ -102,7 +103,7 @@ const OrderDetail = ({ order, zizeom, account }: OrderDetailProps) => {
                     <div className="border-t border-gray-200 pt-6">
                         <h2 className="text-lg font-medium text-gray-800 mb-4">시공 상세 정보</h2>
                         <div className="space-y-4">
-                            {order.serviceDetails.map((detail, index) => (
+                            {order.serviceDetails && order.serviceDetails.map((detail, index) => (
                                 <div
                                     key={detail._id}
                                     className="p-4 bg-gray-50 rounded-lg"
@@ -134,7 +135,7 @@ const OrderDetail = ({ order, zizeom, account }: OrderDetailProps) => {
 export const getServerSideProps: GetServerSideProps = async (context) => {
     try {
         const { id } = context.query;
-        if (!id) {
+        if (!id || typeof id !== 'string') {
             return {
                 notFound: true
             };
@@ -143,7 +144,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
         await client.connect();
         const db = client.db("main");
 
-        const order = await db.collection("orders").findOne({ _id: id });
+        const order = await db.collection("orders").findOne({ _id: new ObjectId(id) });
         if (!order) {
             return {
                 notFound: true
@@ -151,8 +152,8 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
         }
 
         const [zizeom, account] = await Promise.all([
-            db.collection("zizeoms").findOne({ _id: order.zizeomId }),
-            db.collection("accounts").findOne({ _id: order.accountId })
+            db.collection("zizeoms").findOne({ _id: new ObjectId(order.zizeomId) }),
+            db.collection("accounts").findOne({ _id: new ObjectId(order.accountId) })
         ]);
 
         return {

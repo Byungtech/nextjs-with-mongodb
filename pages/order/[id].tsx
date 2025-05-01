@@ -182,34 +182,44 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
         await client.connect();
         const db = client.db("main");
 
+        console.log('Fetching order with ID:', id);
         const order = await db.collection("orders").findOne({ _id: new ObjectId(id) });
+        console.log('Found order:', order);
+
         if (!order) {
             return {
                 notFound: true
             };
         }
 
-        // 지점 정보 조회
-        const zizeom = await db.collection("zizeoms").findOne({ _id: new ObjectId(order.zizeomId) });
-        // 계정 정보 조회
-        const account = await db.collection("accounts").findOne({ _id: new ObjectId(order.accountId) });
+        let zizeom = null;
+        let account = null;
+
+        if (order.zizeomId) {
+            console.log('Fetching zizeom with ID:', order.zizeomId);
+            try {
+                zizeom = await db.collection("zizeoms").findOne({ _id: new ObjectId(order.zizeomId) });
+            } catch (error) {
+                zizeom = await db.collection("zizeoms").findOne({ _id: order.zizeomId });
+            }
+            console.log('Found zizeom:', zizeom);
+        }
+
+        if (order.accountId) {
+            console.log('Fetching account with ID:', order.accountId);
+            try {
+                account = await db.collection("accounts").findOne({ _id: new ObjectId(order.accountId) });
+            } catch (error) {
+                account = await db.collection("accounts").findOne({ _id: order.accountId });
+            }
+            console.log('Found account:', account);
+        }
 
         return {
             props: {
-                order: {
-                    ...JSON.parse(JSON.stringify(order)),
-                    zizeom: {
-                        name: zizeom?.name || '',
-                        address: zizeom?.address || '',
-                        phone: zizeom?.phone || ''
-                    },
-                    account: {
-                        name: account?.name || '',
-                        accountName: account?.accountName || '',
-                        phone: account?.phone || '',
-                        email: account?.email || ''
-                    }
-                }
+                order: JSON.parse(JSON.stringify(order)),
+                zizeom: zizeom ? JSON.parse(JSON.stringify(zizeom)) : null,
+                account: account ? JSON.parse(JSON.stringify(account)) : null
             }
         };
     } catch (error) {
