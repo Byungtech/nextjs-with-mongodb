@@ -3,7 +3,14 @@ import styled from 'styled-components';
 const LogoContainer = styled.div`
     width: 124.864px;
     height: 32px;
-    color: #0070f3;
+    color: #2d2d2d;
+    filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.1));
+    transition: all 0.3s ease;
+
+    &:hover {
+        color: #1a1a1a;
+        filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.15));
+    }
 `;
 
 const Logo = () => {

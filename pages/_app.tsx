@@ -1,6 +1,9 @@
 import type { AppProps } from 'next/app';
 import { createGlobalStyle } from 'styled-components';
 import Layout from '../components/Layout';
+import { AuthProvider } from '../contexts/AuthContext';
+import Guard from '../components/Guard';
+import '../styles/globals.css';
 
 const GlobalStyle = createGlobalStyle`
   :root {
@@ -51,11 +54,13 @@ const GlobalStyle = createGlobalStyle`
 
 export default function App({ Component, pageProps }: AppProps) {
   return (
-    <>
+    <AuthProvider>
       <GlobalStyle />
-      <Layout>
-        <Component {...pageProps} />
-      </Layout>
-    </>
+      <Guard>
+        <Layout>
+          <Component {...pageProps} />
+        </Layout>
+      </Guard>
+    </AuthProvider>
   );
 } 
